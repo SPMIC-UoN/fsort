@@ -8,24 +8,31 @@ class B0(Sorter):
     def __init__(self):
         Sorter.__init__(self, "b0")
 
-    def run(self):
-        self.add(seriesdescription="B0", imagetype="PHASE", nvols=1)
+    def _add_std(self, imagetype):
+        self.add(seriesdescription="B0", imagetype=imagetype, nvols=1)
         self.remove(seriesdescription="pcasl")
+        self.remove(seriesdescription="off-resonance")
+
+    def run(self):
+        self._add_std("PHASE")
         if self.have_files():
-            self.group("echotime")
+            self.group("echotime", allow_none=False)
             self.select_latest()
             self.save("b0_phase_echo")
         else:
             # No phase? Look for real/imag as we can use them to reconstruct phase
-            self.add(seriesdescription="B0", imagetype="REAL")
-            self.remove(seriesdescription="pcasl")
-            self.group("echotime")
+            LOG.info(" - No phase maps found - will look for real/imaginary parts")
+            self._add_std("REAL")
+            if not self.have_files():
+                LOG.warn(" - No real part found")
+            self.group("echotime", allow_none=False)
             self.select_latest()
             self.save("b0_real_echo")
             self.clear_selection()
-            self.add(seriesdescription="B0", imagetype="IMAGINARY")
-            self.remove(seriesdescription="pcasl")
-            self.group("echotime")
+            self._add_std("IMAGINARY")
+            if not self.have_files():
+                LOG.warn(" - No imaginary part found")
+            self.group("echotime", allow_none=False)
             self.select_latest()
             self.save("b0_imag_echo")
 
@@ -39,17 +46,19 @@ class B1(Sorter):
         self.remove(imagetype="PHASE")
         if self.have_files():
             LOG.info("  - Found 2-volume GE data")
-            self.select_vol(0)
-        self.add(seriesdescription="B1", nvols=1)
-        self.remove(imagetype="PHASE")
-        # FIXME B1 scaling from ukat using flip angle?
+        else:
+            self.add(seriesdescription="B1", nvols=1)
+            self.remove(imagetype="PHASE")
+
+        # B1 scaling using flip angle?
+        self.scale(factor=10, attribute="FlipAngle", inverse=True)
         self.select_latest()
-        self.save("b1")
+        self.save("b1", vol=0)
 
     def run_siemens(self):
         self.add(seriesdescription="B1", nvols=1)
         self.remove(imagetype="PHASE")
-        self.scale(0.1) # Siemens data is scaled by x10
+        self.scale(factor=0.1) # Siemens data is scaled by x10
         if self.count(imagetype="B1") > 0:
             self.filter(imagetype="B1")
         self.select_latest()
@@ -67,11 +76,11 @@ class B1(Sorter):
             self.filter(echonumber=2)
         else:
             # Philips classic protocol
-            self.scale("PhilipsRescaleSlope", inverse=True)
+            self.scale(attribute="PhilipsRescaleSlope", inverse=True)
 
         self.select_latest()
         self.save("b1")
-     
+
 class MTR(Sorter):
     def __init__(self):
         Sorter.__init__(self, "mtr")
@@ -104,8 +113,12 @@ class T2star(Sorter):
         self.remove(imagetype="PHASE")
         self.remove(imagetype="REAL")
         self.remove(imagetype="IMAGINARY")
+        for hires_identifier in ("highres", "hires", "high_res"):
+            if self.count(seriesdescription=hires_identifier) > 0:
+                LOG.info(f" - Found high-res data with flag {hires_identifier}, keeping only data with this flag")
+                self.filter(seriesdescription=hires_identifier)
         # FIXME ideally we want to check for T1 overlap as in renal_preproc code
-        self.group("echotime")
+        self.group("echotime", allow_none=False)
         self.select_latest()
         self.save("t2star_e")
 
@@ -120,7 +133,7 @@ class T1(Sorter):
             self.filter(imagetype="MAP")
         if not self.have_files():
             self.add(seriesdescription="molli", imagetype="MIXED")
-    
+
     def _filter_std(self):
         self.remove(nslices=3, reason="3-slice heart scan")
         self.remove(seriesdescription="500", reason="TD500 scan addition to TD0 scan")
@@ -134,7 +147,7 @@ class T1(Sorter):
     def run_philips(self):
         self._add_std()
         self._filter_std()
-        self.group("affine")
+        self.group("affinedata")
         self.select_latest()
 
         if self.count(nvols=1) > 0:
@@ -157,15 +170,23 @@ class T1(Sorter):
         if not self.have_files():
             self.add(seriesdescription="molli", imagetype="MDE")
         self._filter_std()
-        self.group("affine")
+        self.group("affinedata")
         self.select_latest()
         if self.count(nvols=1) > 0:
             self.save("t1_map")
             self.save("t1_conf")
         else:
-            # FIXME T1 map reconstruction for AFIRM?
-            self.save("t1_map", vol=0)
-            self.save("t1_conf", vol=2)
+            # GE multi volume is raw MOLLI data and needs reconstruction during processing
+            LOG.info(" - No single-volume T1 map - saving raw MOLLI data from GE for subsequent reconstruction")
+            self.save("t1_raw_molli")
+
+    def run_siemens(self):
+        self._add_std()
+        self._filter_std()
+        self.group("affinedata")
+        self.select_latest()
+        self.save("t1_map")
+        self.save("t1_conf")
 
 class T1w(Sorter):
     def __init__(self):
@@ -174,7 +195,7 @@ class T1w(Sorter):
     def run(self):
         self.add(seriesdescription="t1w")
         self.select_latest()
-        self.save("t1w_map")
+        self.save("t1w")
 
 class T2w(Sorter):
     def __init__(self):
@@ -183,7 +204,7 @@ class T2w(Sorter):
     def run(self):
         self.add(seriesdescription="t2w")
         self.select_latest()
-        self.save("t2w_map")
+        self.save("t2w")
 
 SORTERS = [
     B0(),
