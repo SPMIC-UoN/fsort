@@ -28,9 +28,21 @@ def main():
     parser.add_argument('--config', help='Path to Python configuration file', required=True)
     parser.add_argument('--dicom', help='Path to DICOM input')
     parser.add_argument('--nifti', help='Path to NIFTI input')
+    parser.add_argument("--xnat-host", help="XNAT host url")
+    parser.add_argument("--xnat-project", help="Project ID")
+    parser.add_argument("--xnat-subject", help="Subject ID")
+    parser.add_argument("--xnat-subject-idx", type=int, help="Specify subject by index number (starting at zero)")
+    parser.add_argument("--xnat-session", help="Session ID")
+    parser.add_argument("--xnat-session-idx", type=int, help="Session index (starting at zero)")
+    parser.add_argument('--xnat-dicom-output', help='Path to store initial DICOM downloaded files. If not specified will use dicom')
+    parser.add_argument("--xnat-user", help="XNAT username. If not supplied, environment variable XNAT_USER will be used or interactive prompt provided")
+    parser.add_argument("--xnat-skip-downloaded", help="Skip subjects where DICOM dir already exists", action="store_true", default=False)
     parser.add_argument('--output', help='Path to output folder')
-    parser.add_argument('--nifti-output', help='Path to store initial NIFTI converted files. If not specified, temporary folder will be used')
+    parser.add_argument('--output-subfolder', help='Subfolder relative to output')
+    parser.add_argument('--nifti-output', help='Path (relative to output) to store initial NIFTI converted files. If not specified, will use nifti')
     parser.add_argument('--dcm2niix-args', help='DCM2NIIX arguments for DICOM->NIFTI conversion', default="-m n -f %d_%q")
+    parser.add_argument('--allow-no-vendor', action="store_true", default=False, help='If specified, process files even when no vendor can be identified')
+    parser.add_argument('--allow-dupes', action="store_true", default=False, help='If specified, process files even when another file was found with same image contents')
     parser.add_argument('--overwrite', action="store_true", default=False, help='If specified, overwrite any existing output')
     parser.add_argument('--debug', action="store_true", default=False, help='Enable debug output')
     options = parser.parse_args()
@@ -42,10 +54,10 @@ def main():
     _setup_logging(options)
     LOG.info(f"FSORT v{__version__}")
 
-    if not options.dicom and not options.nifti:
-        parser.error("Either NIFTI or DICOM input must be provided")
-    if options.dicom and options.nifti:
-        parser.error("Only one of NIFTI or DICOM input can be provided")
+    if not options.dicom and not options.nifti and not options.xnat_host:
+        parser.error("Either NIFTI, DICOM or XNAT input must be provided")
+    if sum([bool(v) for v in (options.dicom, options.nifti, options.xnat_host)]) > 1:
+        parser.error("Only one of NIFTI, DICOM or XNAT input can be provided")
     
     Fsort(options).run()
 
