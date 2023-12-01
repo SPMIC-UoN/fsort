@@ -1,12 +1,6 @@
 
 """
-RENAL_PREPROC_XNAT: XNAT interface to renal_preproc
-
-Intended for use in Docker container for XNAT. This version runs on a session context
-rather than a scan context
-
-Expects the environment variables XNAT_HOST, XNAT_USER and XNAT_PASS
-to be set (XNAT does this automatically)
+FSORT: Code to do file sorting directly from an XNAT database
 """
 import argparse
 import logging
@@ -17,6 +11,19 @@ import xnat_nott
 LOG = logging.getLogger(__name__)
 
 def get_sessions(fsort_options):
+    """
+    Get subject sessions based on FSORT options
+
+    Currently only one subject at a time can be processed, this may be
+    specified by name/label using options.xnat_subject or by index using
+    options.xnat_subject_idx (sorted by label/ID)
+
+    A session index can also be specified but this is optional, multiple
+    sessions are processed by default
+
+    :return: Sequence of sessions, each having attributes: output (path to
+             output folder), dicom (path to downloaded DICOMs)
+    """
     options = argparse.Namespace()
     for k, v in fsort_options.__dict__.items():
         if k.startswith("xnat"):
@@ -31,11 +38,9 @@ def get_sessions(fsort_options):
         raise RuntimeError("Can't specify subject ID and index at the same time")
     elif not options.subject and options.subject_idx is None:
         raise RuntimeError("Must specify subject ID or subject index")
-    elif options.subject:
-        subjects = [xnat_nott.get_subject(options, options.project, options.subject)]
-        subjects.sort(key=lambda x: x["ID"])
     else:
         subjects = xnat_nott.get_subjects(options, options.project)
+        subjects.sort(key=lambda x: x.get('label', x.get('ID', '')).upper())
         LOG.info(f" - {len(subjects)} subjects")
         if options.subject_idx is not None:
             if options.subject_idx >= 0 and options.subject_idx < len(subjects):
