@@ -1,4 +1,3 @@
-#!/bin/env python
 """
 FSORT: File pre-sorter for imaging processing pipelines
 """
@@ -23,11 +22,19 @@ def _setup_logging(args):
     handler.setFormatter(formatter)
     logging.getLogger().addHandler(handler)
 
+def run(config_fname):
+    sys.argv.append(f"--config={config_fname}")
+    main()
+
 def main():
+    """
+    FSORT command line entry point
+    """
     parser = argparse.ArgumentParser(f'File pre-sorter v{__version__}', add_help=True)
     parser.add_argument('--config', help='Path to Python configuration file', required=True)
     parser.add_argument('--dicom', help='Path to DICOM input')
     parser.add_argument('--nifti', help='Path to NIFTI input')
+    parser.add_argument("--skip-dcm2niix", help="Skip DCM2NIIX conversion where NIFTI dir already exists and contains files", action="store_true", default=False)
     parser.add_argument("--xnat-host", help="XNAT host url")
     parser.add_argument("--xnat-project", help="Project ID")
     parser.add_argument("--xnat-subject", help="Subject ID")
