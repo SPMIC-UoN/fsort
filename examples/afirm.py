@@ -1,3 +1,6 @@
+"""
+FSORT config for AFIRM study
+"""
 import logging
 
 from fsort.sorter import Sorter
@@ -5,6 +8,12 @@ from fsort.sorter import Sorter
 LOG = logging.getLogger(__name__)
 
 class B0(Sorter):
+    """
+    B0 mapping data
+    
+    We need the phase at two echos. Sometimes we may not have phase data
+    so save real/imaginary part if not as this can be reconstructed to phase
+    """
     def __init__(self):
         Sorter.__init__(self, "b0")
 
@@ -18,7 +27,7 @@ class B0(Sorter):
         if self.have_files():
             self.group("echotime", allow_none=False)
             self.select_latest()
-            self.save("b0_phase_echo")
+            self.save("b0_phase_echo", sort="echotime")
         else:
             # No phase? Look for real/imag as we can use them to reconstruct phase
             LOG.info(" - No phase maps found - will look for real/imaginary parts")
@@ -27,16 +36,21 @@ class B0(Sorter):
                 LOG.warn(" - No real part found")
             self.group("echotime", allow_none=False)
             self.select_latest()
-            self.save("b0_real_echo")
+            self.save("b0_real_echo", sort="echotime")
             self.clear_selection()
             self._add_std("IMAGINARY")
             if not self.have_files():
                 LOG.warn(" - No imaginary part found")
             self.group("echotime", allow_none=False)
             self.select_latest()
-            self.save("b0_imag_echo")
+            self.save("b0_imag_echo", sort="echotime")
 
 class B1(Sorter):
+    """
+    B1 mapping data
+
+    Quite vendor-specific
+    """
     def __init__(self):
         Sorter.__init__(self, "b1")
         
@@ -82,6 +96,12 @@ class B1(Sorter):
         self.save("b1")
 
 class MTR(Sorter):
+    """
+    MTR ON/OFF data
+    
+    This may be in separate ON/OFF files, or a single 2-volume
+    file for Phillips
+    """
     def __init__(self):
         Sorter.__init__(self, "mtr")
 
@@ -104,6 +124,11 @@ class MTR(Sorter):
         self.save("mtr_on_off")
 
 class T2star(Sorter):
+    """
+    T2* mapping data
+    
+    Need multiple echos (12 in AFIRM), real part
+    """
     def __init__(self):
         Sorter.__init__(self, "t2star")
 
@@ -120,9 +145,15 @@ class T2star(Sorter):
         # FIXME ideally we want to check for T1 overlap as in renal_preproc code
         self.group("echotime", allow_none=False)
         self.select_latest()
-        self.save("t2star_e")
+        self.save("t2star_e", sort="echotime")
 
 class T1(Sorter):
+    """
+    T1 MOLLI mapping data
+    
+    This is quite vendor specific, plus for GE we may only get
+    'raw' data that needs subsequent reconstruction to obtain T1 map
+    """
     def __init__(self):
         Sorter.__init__(self, "t1")
 
@@ -189,6 +220,10 @@ class T1(Sorter):
         self.save("t1_conf")
 
 class T1w(Sorter):
+    """
+    T1w scan
+    """
+    
     def __init__(self):
         Sorter.__init__(self, "t1w")
 
@@ -198,6 +233,10 @@ class T1w(Sorter):
         self.save("t1w")
 
 class T2w(Sorter):
+    """
+    T2w scan
+    """
+    
     def __init__(self):
         Sorter.__init__(self, "t2w")
 
