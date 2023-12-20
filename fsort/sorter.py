@@ -177,6 +177,19 @@ class Sorter:
         LOG.info(f" - Grouping by {attrs}: {len(self.groups)} groups found")
 
     def select_latest(self, warn=True):
+        return self.select_one("acquisitiontime", last=True)
+
+    def select_earliest(self, warn=True):
+        return self.select_one("acquisitiontime", last=False)
+
+    def select_one(self, attr, last=True, warn=True):
+        """
+        Select a single file from each group
+        
+        :param attr: Attribute to use for ordering
+        :param last: If True, select last, otherwise select first type-specific ordering
+        :param warn: Warn about discarded files
+        """
         if not self.groups:
             self.groups = {None : self.selected}
         self.selected = []
@@ -185,22 +198,23 @@ class Sorter:
             if len(files) == 0:
                 new_groups[key] = []
             else:
-                LOG.debug(f" - Selecting latest of {len(files)} files for key {key}")
-                latest, timestamp = self._latest_file(files)
-                LOG.debug(f" - {latest}, acquisition time {timestamp}")
-                new_groups[key] = [latest]
+                LOG.debug(f" - Selecting one of {len(files)} files for key {key}")
+                selected, value = self._one_file(files, attr, last)
+                LOG.debug(f" - {selected}, {attr}={value}")
+                new_groups[key] = [selected]
                 if len(files) > 1 and warn:
-                    discarded = [f.fname for f in files if f != latest]
-                    LOG.warn(f" - Select latest file - keeping {latest.fname} and discarding {len(files)-1} files for group {key}: {discarded}")
-                self.selected.append(latest)
+                    discarded = [f.fname for f in files if f != selected]
+                    LOG.warn(f" - Select single file - keeping {selected.fname} with {attr}={value} and discarding {len(files)-1} files for group {key}: {discarded}")
+                self.selected.append(selected)
 
-    def _latest_file(self, files):
-        latest_file, latest_timestamp = None, None
+    def _one_file(self, files, attr, last):
+        selected, selected_value = None, None
         for f in files:
-            if latest_timestamp is None or f.acquisitiontime > latest_timestamp:
-                latest_timestamp = f.acquisitiontime
-                latest_file = f
-        return latest_file, latest_timestamp
+            f_value = getattr(f, attr)
+            if selected_value is None or (last and f_value > selected_value) or (not last and f_value < selected_value):
+                selected_value = f_value
+                selected = f
+        return selected, selected_value
 
     def have_files(self):
         return len(self.selected) > 0
