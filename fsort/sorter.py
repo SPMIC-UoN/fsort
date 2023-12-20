@@ -25,7 +25,6 @@ class Sorter:
         """
         self.name = name
         self._outdir = None
-        self._scale_attribute, self._scale_factor, self._scale_inverse = None, None, None
         self.clear_selection()
         self._candidates = []
 
@@ -35,6 +34,7 @@ class Sorter:
         """
         self.selected = []
         self.groups = {}
+        self._scale_attribute, self._scale_factor, self._scale_inverse = None, None, None
 
     @property
     def candidates(self):
