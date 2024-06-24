@@ -59,7 +59,7 @@ class Fsort:
         else:
             self._run_session(self._options.output, self._options.dicom, self._options.nifti)
 
-    def _run_session(self, output, dicom_in=None, nifti_in=None):
+    def _run_session(self, output, dicom_in=None, niftidirs=None):
         """
         Run file sorting on a single subject session
 
@@ -73,17 +73,21 @@ class Fsort:
             output = os.path.join(output, self._options.output_subfolder)
 
         if dicom_in:
-            if not nifti_in:
-                nifti_in = os.path.join(output, "nifti")
-            if self._options.skip_dcm2niix and os.path.exists(nifti_in) and os.listdir(nifti_in):
+            if not niftidirs:
+                niftidirs = [os.path.join(output, "nifti")]
+            elif len(niftidirs) > 1:
+                raise ValueError("Only one NIFTI dir allowed when using DICOM source data")
+
+            niftidir = niftidirs[0]
+            if self._options.skip_dcm2niix and os.path.exists(niftidir) and os.listdir(niftidir):
                 LOG.info(" - NIFTI files already found - skipping dcm2niix conversion")
             else:
-                self._dcm2niix(dicom_in, nifti_in, self._options.dcm2niix_args)
-        elif not nifti_in:
+                self._dcm2niix(dicom_in, niftidir, self._options.dcm2niix_args)
+        elif not niftidirs:
             raise RuntimeError("Must specify DICOM or NIFTI input folder")
 
-        LOG.info(f" - NIFTI files in {nifti_in}")
-        vendor_files = self._scan_niftis(nifti_in, allow_no_vendor=self._options.allow_no_vendor, allow_dupes=self._options.allow_dupes)
+        LOG.info(f" - NIFTI files in {niftidirs}")
+        vendor_files = self._scan_niftis(niftidirs, allow_no_vendor=self._options.allow_no_vendor, allow_dupes=self._options.allow_dupes)
         if not vendor_files:
             LOG.warn(f"No session files found - cannot process session")
         else:
@@ -155,7 +159,7 @@ class Fsort:
                 LOG.warn(f"dcm2niix failed for {scan_dir} with exit code {exc.returncode}")
                 LOG.warn(exc.output)
 
-    def _scan_niftis(self, niftidir, allow_no_vendor=False, allow_dupes=False):
+    def _scan_niftis(self, niftidirs, allow_no_vendor=False, allow_dupes=False):
         """
         Scan NIFTI files extracting metadata in useful format for matching
 
@@ -165,26 +169,27 @@ class Fsort:
         :return: Mapping from vendor name to list of ImageFile instances
         """
         vendor_files = {}
-        for path, _dirs, files in os.walk(niftidir):
-            for fname in files:
-                if fname.endswith(".nii") or fname.endswith(".nii.gz"):
-                    try:
-                        fpath = os.path.join(path, fname)
-                        file = ImageFile(fpath, warn_json=True)
-                    except Exception:
-                        LOG.exception(f"Failed to load NIFTI file {fpath} - ignoring")
-                        continue
+        for niftidir in niftidirs:
+            for path, _dirs, files in os.walk(niftidir):
+                for fname in files:
+                    if fname.endswith(".nii") or fname.endswith(".nii.gz"):
+                        try:
+                            fpath = os.path.join(path, fname)
+                            file = ImageFile(fpath, warn_json=True)
+                        except Exception:
+                            LOG.exception(f"Failed to load NIFTI file {fpath} - ignoring")
+                            continue
 
-                    LOG.debug(f" - Found candidate file {fpath} for vendor {file.vendor}")
-                    if file.vendor or allow_no_vendor:
-                        if file.vendor not in vendor_files :
-                            vendor_files[file.vendor] = []
-                        dupes = [f for f in vendor_files[file.vendor] if f.hash == file.hash]
-                        if dupes and not allow_dupes:
-                            LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - ignoring")
-                        else:
-                            if dupes:
-                                LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - keeping both")
-                            vendor_files[file.vendor].append(file)
+                        LOG.debug(f" - Found candidate file {fpath} for vendor {file.vendor}")
+                        if file.vendor or allow_no_vendor:
+                            if file.vendor not in vendor_files :
+                                vendor_files[file.vendor] = []
+                            dupes = [f for f in vendor_files[file.vendor] if f.hash == file.hash]
+                            if dupes and not allow_dupes:
+                                LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - ignoring")
+                            else:
+                                if dupes:
+                                    LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - keeping both")
+                                vendor_files[file.vendor].append(file)
 
         return vendor_files

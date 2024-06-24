@@ -15,8 +15,8 @@ def get_sessions(fsort_options):
     Get subject sessions based on FSORT options
 
     Currently only one subject at a time can be processed, this may be
-    specified by name/label using options.xnat_subject or by index using
-    options.xnat_subject_idx (sorted by label/ID)
+    specified by name/label using options.subject or by index using
+    options.subject_idx (sorted by label/ID)
 
     A session index can also be specified but this is optional, multiple
     sessions are processed by default
@@ -28,6 +28,8 @@ def get_sessions(fsort_options):
     for k, v in fsort_options.__dict__.items():
         if k.startswith("xnat"):
             setattr(options, k[5:], v)
+    options.subject = fsort_options.subject
+    options.subject_idx = fsort_options.subject_idx
 
     LOG.info(f" - Input data from XNAT: {options.host}")
     LOG.info(f" - Project: {options.project}")
