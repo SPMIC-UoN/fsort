@@ -211,8 +211,7 @@ class ImageFile:
         """
         Voxel volume in ml
         """
-        vox_dims = self.nii.header.get_zooms()
-        return vox_dims[0]*vox_dims[1]*vox_dims[2] / 1000
+        return np.abs(np.linalg.det(self.affine[:3, :3])) / 1000
 
     @property
     def data(self):
