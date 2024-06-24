@@ -23,3 +23,5 @@ NIFTI and no JSON sidecar metadata is available.
 """
 from .sorter import Sorter
 from .main import run
+from .image_file import ImageFile
+
