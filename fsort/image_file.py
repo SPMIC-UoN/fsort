@@ -57,6 +57,7 @@ class ImageFile:
         if copy_json and os.path.exists(self.json_fpath):
             new_json_fpath = fname.replace(".nii.gz", ".json").replace(".nii", ".json")
             shutil.copyfile(self.json_fpath, new_json_fpath)
+        return ImageFile(fname, warn_json=False)
 
     def save(self, fname):
         """
@@ -236,7 +237,7 @@ class ImageFile:
 
         return hash_md5.hexdigest()
 
-    def mdval(self, key, default=None, keep_case=False):
+    def mdval(self, key, default=None, keep_case=False, replace_spaces=True):
         """
         Get a metadata value
         
@@ -250,6 +251,10 @@ class ImageFile:
         val = self.metadata.get(key, default)
         if isinstance(val, str) and not keep_case:
             val = val.lower()
+        if isinstance(val, str) and replace_spaces:
+            val = val.replace(" ", "_")
         if isinstance(val, list) and len(val) > 0 and isinstance(val[0], str) and not keep_case:
             val = [v.lower() for v in val]
+        if isinstance(val, list) and len(val) > 0 and isinstance(val[0], str) and replace_spaces:
+            val = [v.replace(" ", "_") for v in val]
         return val
