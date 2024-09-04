@@ -90,8 +90,8 @@ def main():
             if options.subjects_file:
                 with open(options.subjects_file, "r") as f:
                     subjects = [l.strip() for l in f.readlines() if l.strip()]
-            elif options.subjects_dir:
-                subjects = [d for d in os.listdir(options.subjects_dir) if os.path.isdir(os.path.join(options.subjects_dir, d))]
+            elif options.input:
+                subjects = [d for d in os.listdir(options.input) if os.path.isdir(os.path.join(options.input, d))]
                 subjects = sorted(subjects)
             else:
                 parser.error("--subject-idx given but neither --subjects-file nor --input was specified")
