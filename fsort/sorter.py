@@ -116,6 +116,8 @@ class Sorter:
             return 0
         else:
             self.selected.extend(to_add)
+            # Existing groups are invalidated when we add files
+            self.groups = {}
             return num_found
 
     def count(self, match_type=CONTAINS, count_candidates=False, **kwargs):
@@ -135,6 +137,8 @@ class Sorter:
                 else:
                     LOG.debug(f" - Removing: {file.fname}")
                 self.selected.remove(file)
+                # Existing groups are invalidated when we remove files
+                self.groups = {}
 
     def filter(self, match_type=CONTAINS, reason=None, **kwargs):
         """
@@ -148,6 +152,8 @@ class Sorter:
                 else:
                     LOG.debug(f" - Filtering: {file.fname}")
                 self.selected.remove(file)
+                # Existing groups are invalidated when we add files
+                self.groups = {}
 
     def scale(self, factor=1.0, attribute=None, inverse=False):
         """
