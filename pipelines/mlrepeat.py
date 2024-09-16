@@ -1,6 +1,6 @@
 import logging
 
-from fsort import Sorter, run
+from fsort import Sorter, run, sorters
 
 LOG = logging.getLogger(__name__)
 
@@ -118,9 +118,9 @@ SORTERS = [
     T2w(),
     MolliKidney(),
     AxB0(),
-    AxB1(),
+    sorters.B1("b1_ax", seriesdescription="ax_b1map", imagetype="b1"),
+    sorters.B1("b1_cor", seriesdescription="cor_b1map", imagetype="b1"),
     CorB0(),
-    CorB1(),
 ]
 
 if __name__ == "__main__":
