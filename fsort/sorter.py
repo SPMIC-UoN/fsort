@@ -161,7 +161,14 @@ class Sorter:
         """
         if self._scale_factor is not None:
             LOG.warn(" - Scaling factor already defined - overriding")
-
+        if not isinstance(attribute, list):
+                attribute = [attribute,]
+        if not isinstance(inverse, list):
+                inverse = [inverse,]
+        if len(inverse) == 1:
+            inverse = inverse * len(attribute)
+        elif len(inverse) != len(attribute):
+            raise RuntimeError("List of scale attributes and inverse flags must have the same length")
         self._scale_factor, self._scale_attribute, self._scale_inverse = factor, attribute, inverse
 
     def group(self, *attrs, **kwargs):
@@ -228,11 +235,12 @@ class Sorter:
     def _get_scale_factor(self, f):
         overall_factor = 1.0
         if self._scale_attribute:
-            factor = getattr(f, self._scale_attribute)
-            if self._scale_inverse:
-                factor = 1.0/factor
-            LOG.info(f" - Scaling {f.fname} using attribute {self._scale_attribute}, inverse={self._scale_inverse} ({factor})")
-            overall_factor *= float(factor)
+            for attr, inverse in zip(self._scale_attribute, self._scale_inverse):
+                factor = getattr(f, attr)
+                if inverse:
+                    factor = 1.0/factor
+                LOG.info(f" - Scaling {f.fname} using attribute {attr}, inverse={inverse} ({factor})")
+                overall_factor *= float(factor)
         if self._scale_factor is not None:
             overall_factor *= float(self._scale_factor)
             LOG.info(f" - Scaling {f.fname} by factor {self._scale_factor}")
