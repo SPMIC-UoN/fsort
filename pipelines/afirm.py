@@ -26,6 +26,10 @@ class B0(Sorter):
         self._add_std("PHASE")
         if self.have_files():
             self.group("echotime", allow_none=False)
+            if any([len(g) > 1 for g in self.groups.values()]):
+                LOG.warn(" - Could not separate B0 phase/mag data - using filename filtering")
+                self.filter(fname="_ph")
+                self.group("echotime", allow_none=False)
             self.select_latest()
             self.save("b0_phase_echo", sort="echotime")
         else:
@@ -134,7 +138,6 @@ class T2star(Sorter):
 
     def run(self):
         self.add(seriesdescription="t2star", nvols=1)
-        # FIXME remove if TE not defined
         self.remove(imagetype="PHASE")
         self.remove(imagetype="REAL")
         self.remove(imagetype="IMAGINARY")
@@ -158,7 +161,7 @@ class T1(Sorter):
         Sorter.__init__(self, "t1")
 
     def _add_std(self):
-        self.add(seriesdescription="molli", imagetype="T1 MAP")
+        self.add(seriesdescription="molli", imagetype="T1_MAP")
         if not self.have_files():
             self.add(seriesdescription="molli", imagetype="T1")
             self.filter(imagetype="MAP")
