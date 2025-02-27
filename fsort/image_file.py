@@ -56,7 +56,8 @@ class ImageFile:
         nii.to_filename(fname)
         if copy_json and os.path.exists(self.json_fpath):
             new_json_fpath = fname.replace(".nii.gz", ".json").replace(".nii", ".json")
-            shutil.copyfile(self.json_fpath, new_json_fpath)
+            with open(new_json_fpath, 'w') as fp:
+                json.dump(self.metadata, fp, indent=4, default=lambda o: '<not serializable>')
         return ImageFile(fname, warn_json=False)
 
     def save(self, fname):
@@ -70,7 +71,8 @@ class ImageFile:
         self.nii.to_filename(fname)
         if os.path.exists(self.json_fpath):
             new_json_fpath = fname.replace(".nii.gz", ".json").replace(".nii", ".json")
-            shutil.copyfile(self.json_fpath, new_json_fpath)
+            with open(new_json_fpath, 'w') as fp:
+                json.dump(self.metadata, fp, indent=4)
 
     def __getattr__(self, attr):
         """
@@ -112,14 +114,14 @@ class ImageFile:
             LOG.debug(f"Checking for {key} ({myval}) {match_type} {value} in {self.fname}")
             if value is None and myval is None:
                 match = True
-            elif value is None or myval is None:
+            elif value is None and myval is not None:
                 match = False
             elif isinstance(myval, float) and isinstance(value, float):
                 match = math.abs(value - myval) < FLOAT_TOL
             elif isinstance(myval, int) and isinstance(value, int):
                 match = value == myval
-            elif isinstance(myval, list) and isinstance(value, list):
-                match = np.allclose(value, myval)
+            elif isinstance(myval, (list, tuple)) and isinstance(value, (list, tuple)):
+                match = np.allclose(list(value), list(myval))
             elif match_type == "contains" and isinstance(myval, str) and isinstance(value, str):
                 match = value.lower() in myval.lower()
             elif match_type == "contains" and isinstance(myval, list) and isinstance(value, str):
@@ -208,6 +210,14 @@ class ImageFile:
         return tuple(a)
 
     @property
+    def resolution(self):
+        """
+        Voxel size in um integers, designed to be comparable and hashable
+        """
+        voxel_sizes = self.nii.header.get_zooms()
+        return tuple([int(v * 1000) for v in voxel_sizes])
+
+    @property
     def voxel_volume(self):
         """
         Voxel volume in ml
@@ -219,10 +229,19 @@ class ImageFile:
         """
         Underlying data array, always at least 3D
         """
-        data = self.nii.get_fdata()
+        data = np.array(self.nii.get_fdata())
         while data.ndim < 3:
             data = data[..., np.newaxis]
         return data
+
+    @data.setter
+    def data(self, data):
+        """
+        Change the data in the image
+        """
+        while data.ndim < 3:
+            data = data[..., np.newaxis]
+        self.nii = nib.Nifti1Image(data, self.affine, self.nii.header)
 
     @property
     def hash(self):
@@ -258,3 +277,12 @@ class ImageFile:
         if isinstance(val, list) and len(val) > 0 and isinstance(val[0], str) and replace_spaces:
             val = [v.replace(" ", "_") for v in val]
         return val
+
+    def reorient2std(self):
+        """
+        Reorient the image to standard orientation
+        """
+        self.nii = nib.as_closest_canonical(self.nii).as_reoriented(
+            np.array([[0, -1], [1, 1], [2, 1]])
+        )
+        return self
