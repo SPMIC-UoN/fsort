@@ -52,6 +52,7 @@ def main():
     parser.add_argument('--output-subfolder', help='Subfolder relative to output')
     parser.add_argument('--nifti-output', help='Path (relative to output) to store initial NIFTI converted files. If not specified, will use nifti')
     parser.add_argument("--skip-dcm2niix", help="Skip DCM2NIIX conversion where NIFTI dir already exists and contains files", action="store_true", default=False)
+    parser.add_argument('--dcm2niix', help='One or more dcm2niix executables. Sorters can select which to use', nargs="*", default=["dcm2niix"])
     parser.add_argument('--dcm2niix-args', help='DCM2NIIX arguments for DICOM->NIFTI conversion', default="-m n -f %d_%q")
     parser.add_argument('--allow-no-vendor', action="store_true", default=False, help='If specified, process files even when no vendor can be identified')
     parser.add_argument('--allow-dupes', action="store_true", default=False, help='If specified, process files even when another file was found with same image contents')
@@ -67,7 +68,8 @@ def main():
     LOG.info(f"FSORT v{__version__}")
 
     if not options.dicom and not options.nifti and not options.xnat_host:
-        parser.error("Either NIFTI, DICOM or XNAT input must be provided")
+        # Assum DICOMS under subject input dir
+        options.dicom = "."
     if sum([bool(v) for v in (options.dicom, options.nifti, options.xnat_host)]) > 1:
         parser.error("Only one of NIFTI, DICOM or XNAT input can be provided")
     if options.subject and options.subject_idx:
