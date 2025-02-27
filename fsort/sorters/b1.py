@@ -10,7 +10,7 @@ class B1(Sorter):
 
     This is quite vendor-specific hence generic implementation
     """
-    def __init__(self, name, **kwargs):
+    def __init__(self, name="b1", **kwargs):
         Sorter.__init__(self, name)
         self._kwargs = kwargs
         
@@ -32,6 +32,9 @@ class B1(Sorter):
     def run_siemens(self):
         self.add(nvols=1, **self._kwargs)
         self.remove(imagetype="PHASE")
+        if self.count(imagetype="flip_angle_map") > 0:
+            LOG.info(" - Found data with flip angle in JSON - using this")
+            self.filter(imagetype="flip_angle_map")
         self.scale(factor=0.1) # Siemens data is scaled by x10
         if self.count(imagetype="B1") > 0:
             self.filter(imagetype="B1")
