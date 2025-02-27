@@ -19,7 +19,7 @@ class Sorter:
     REGEX = "regex"
     GLOB = "glob"
 
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         """
         :param name: Unique name for this sorter within a given configuration file
         """
@@ -27,6 +27,9 @@ class Sorter:
         self._outdir = None
         self.clear_selection()
         self._candidates = []
+        self._candidate_sets = {}
+        self._using_set = 0
+        self.kwargs = kwargs
 
     def clear_selection(self):
         """
@@ -46,9 +49,21 @@ class Sorter:
         self.clear_selection()
 
     @property
+    def candidate_set(self):
+        return self._using_set
+
+    @candidate_set.setter
+    def candidate_set(self, set_id):
+        if set_id not in self._candidate_sets:
+            raise RuntimeError(f"Candidate set not found: {set_id}")
+        LOG.info(f" - Selecting conversion source set {set_id}")
+        self._using_set = set_id
+        self.candidates = self._candidate_sets[set_id]
+
+    @property
     def outdir(self):
         return self._outdir
-    
+
     @outdir.setter
     def outdir(self, outdir):
         self._outdir = outdir
@@ -59,7 +74,7 @@ class Sorter:
     def manifest_fname(self):
         return os.path.join(self._outdir, "manifest.txt")
 
-    def process_files(self, files, vendor, outdir):
+    def process_files(self, file_sets, vendor, outdir):
         """
         Process a set of candidate files
         
@@ -67,8 +82,9 @@ class Sorter:
         :param vendor: Vendor name
         :param outdir: Output directory to write files for
         """
-        self.candidates = files
+        self._candidate_sets = file_sets
         self.outdir = outdir
+        self.candidate_set = self.kwargs.get("default_candidate_set", 0)
         if hasattr(self, f"run_{vendor}"):
             getattr(self, f"run_{vendor}")()
         else:
@@ -161,13 +177,15 @@ class Sorter:
         """
         if self._scale_factor is not None:
             LOG.warn(" - Scaling factor already defined - overriding")
-        if not isinstance(attribute, list):
-                attribute = [attribute,]
         if not isinstance(inverse, list):
-                inverse = [inverse,]
-        if len(inverse) == 1:
+            inverse = [inverse,]
+        if not attribute:
+            attribute = []
+        if not isinstance(attribute, list):
+            attribute = [attribute,]
+        if len(attribute) > 1 and len(inverse) == 1:
             inverse = inverse * len(attribute)
-        elif len(inverse) != len(attribute):
+        if len(attribute) > 0 and len(inverse) > 0 and len(inverse) != len(attribute):
             raise RuntimeError("List of scale attributes and inverse flags must have the same length")
         self._scale_factor, self._scale_attribute, self._scale_inverse = factor, attribute, inverse
 
@@ -237,6 +255,9 @@ class Sorter:
         if self._scale_attribute:
             for attr, inverse in zip(self._scale_attribute, self._scale_inverse):
                 factor = getattr(f, attr)
+                if factor is None:
+                    LOG.warn(f" - No attribute {attr} found for scaling - ignoring")
+                    continue
                 if inverse:
                     factor = 1.0/factor
                 LOG.info(f" - Scaling {f.fname} using attribute {attr}, inverse={inverse} ({factor})")
@@ -287,6 +308,8 @@ class Sorter:
                         for idx, v in enumerate(vol):
                             fdata_new[..., idx] = fdata[..., v]
                         fdata = fdata_new
+                        if len(vol) == 1:
+                            fdata = np.squeeze(fdata, axis=3)
                     if self._scale_factor is not None:
                         sf = self._get_scale_factor(file)
                         fdata = sf*fdata
