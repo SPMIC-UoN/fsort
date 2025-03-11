@@ -57,12 +57,22 @@ class T2star(Sorter):
     def run(self):
         self._get_files("t2star")
         if not self.have_files():
-            LOG.info("No T2star data found, checking for T2*")
+            LOG.info(" - No T2star data found, checking for T2*")
             self._get_files("t2*")
+            if not self.have_files():
+                LOG.info(" - No T2* data found, checking for T2")
+                self._get_files("t2")
+                for remove in ("t2_mapping", "t2 mapping", "t2map_resptrig", "t2map"):
+                    self.remove(seriesdescription=remove)
+
         for hires_identifier in ("highres", "hires", "high_res"):
             if self.count(seriesdescription=hires_identifier) > 0:
                 LOG.info(f" - Found high-res data with flag {hires_identifier}, keeping only data with this flag")
                 self.filter(seriesdescription=hires_identifier)
+        if self.count(imagetype="NORM") > 0:
+            LOG.info(f" - Found normalised data, keeping only data with this flag")
+            self.filter(imagetype="NORM")
+
         # FIXME ideally we want to check for T1 overlap as in renal_preproc code
         self.group("echotime", allow_none=False)
         self.select_one("seriesnumber", last=False)
