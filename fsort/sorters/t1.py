@@ -35,7 +35,7 @@ class T1SERaw(Sorter):
         self.remove(seriesdescription="flipped")
         self.remove(nvols=1)
         self.remove(imagetype="phase")
-        if self.count() > 1:
+        if self.count() > 0:
             self.select_latest()
             self.save("t1_se_mag")
         elif phase_in_fname:
@@ -71,7 +71,7 @@ class T11MolliMapOrRaw(Sorter):
     This is quite vendor specific, plus for GE we may only get
     'raw' data that needs subsequent reconstruction to obtain T1 map
     """
-    def __init__(self, name="t1", **kwargs):
+    def __init__(self, name="t1_molli", **kwargs):
         Sorter.__init__(self, name, **kwargs)
 
     def _add_std(self):
@@ -152,7 +152,7 @@ class T11MolliMapOrRaw(Sorter):
         else:
             # GE multi volume is raw MOLLI data and needs reconstruction during processing
             LOG.info(" - No single-volume T1 map - saving raw MOLLI data from GE for subsequent reconstruction")
-            self.save("t1_raw_molli")
+            self.save("t1_molli_raw")
 
     def run_siemens(self):
         self._add_std()
