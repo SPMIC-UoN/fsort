@@ -15,15 +15,21 @@ class B0TwoEchos(Sorter):
         Sorter.__init__(self, name, **kwargs)
         self._add_removes = add_removes
 
-    def _add_std(self, imagetype):
-        self.add(seriesdescription="B0", imagetype=imagetype, nvols=1)
+    def _add_std(self, imagetype=None, fname=None):
+        if imagetype is not None:
+            self.add(seriesdescription="B0", imagetype=imagetype, nvols=1)
+        elif fname is not None:
+            self.add(seriesdescription="B0", fname=fname, nvols=1)
         removes = ["pcasl", "off-resonance"]
         removes += list(self._add_removes)
         for remove in removes:
             self.remove(seriesdescription=remove)
 
     def run(self):
-        self._add_std("PHASE")
+        self._add_std(imagetype="PHASE")
+        if not self.have_files():
+            LOG.info(" - No B0 maps found with phase type, trying filename match")
+            self._add_std(fname="_ph")
         select_earliest = self.kwargs.get("select_earliest", False)
         select_one = self.select_earliest if select_earliest else self.select_latest
         if self.have_files():
@@ -38,7 +44,7 @@ class B0TwoEchos(Sorter):
             # No phase? Look for real/imag as we can use them to reconstruct phase
             LOG.info(" - No phase maps found - will look for real/imaginary parts")
             have_real, have_imag = False, False
-            self._add_std("REAL")
+            self._add_std(imagetype="REAL")
             if not self.have_files():
                 LOG.warn(" - No real part found")
             else:
@@ -47,7 +53,7 @@ class B0TwoEchos(Sorter):
                 select_one()
                 self.save("b0_real_echo", sort="echotime")
                 self.clear_selection()
-            self._add_std("IMAGINARY")
+            self._add_std(imagetype="IMAGINARY")
             if not self.have_files():
                 LOG.warn(" - No imaginary part found")
             else:
