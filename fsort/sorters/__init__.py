@@ -4,3 +4,4 @@ from .t2 import T2, T2star
 from .t1 import T11MolliMapOrRaw, T1MolliRaw, T1SERaw
 from .generic import SeriesDesc
 from .mtr import MTR
+from .dixon import MDixon
