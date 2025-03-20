@@ -13,7 +13,12 @@ class SeriesDesc(Sorter):
 
     def run(self):
         seriesdesc = self.kwargs.get("seriesdesc", self.name)
+        if not isinstance(seriesdesc, (list, tuple)):
+            seriesdesc = (seriesdesc,)
+        for desc in seriesdesc:
+            self.add(seriesdescription=desc)
+            if self.have_files():
+                break
         fname = self.kwargs.get("fname", self.name)
-        self.add(seriesdescription=seriesdesc)
         self.select_latest()
         self.save(fname)
