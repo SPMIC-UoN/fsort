@@ -35,6 +35,9 @@ class B1(Sorter):
         if self.count(imagetype="flip_angle_map") > 0:
             LOG.info(" - Found data with flip angle in JSON - using this")
             self.filter(imagetype="flip_angle_map")
+        if self.count(imagetype="FLIP") > 0:
+            LOG.info(" - Found data with flip angle in JSON - using this")
+            self.filter(imagetype="FLIP")
         self.scale(factor=0.1) # Siemens data is scaled by x10
         if self.count(imagetype="B1") > 0:
             self.filter(imagetype="B1")
@@ -43,7 +46,12 @@ class B1(Sorter):
 
     def run_philips(self):
         self.add(nvols=1, **self._kwargs)
+        n_found = self.count()
         self.remove(imagetype="PHASE")
+        if n_found > 0 and not self.have_files():
+            LOG.info(" - All B1 maps found with PHASE type, ignoring this")
+            self.add(nvols=1, **self._kwargs)
+        self.remove(fname="_ph")
         if self.count(imagetype="B1") > 0:
             self.filter(imagetype="B1")
 
