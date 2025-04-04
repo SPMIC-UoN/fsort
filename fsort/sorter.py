@@ -313,7 +313,7 @@ class Sorter:
                     if self._scale_factor is not None:
                         sf = self._get_scale_factor(file)
                         fdata = sf*fdata
-                    file.save_derived(fdata, fpath)
+                    file.save_derived(fdata, fpath, copy_bdata=True)
                 manifest.append((file.fname, fname, vol, sf, self._scale_factor, self._scale_attribute, self._scale_inverse))
                 n += 1
 
