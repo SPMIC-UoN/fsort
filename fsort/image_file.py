@@ -32,6 +32,8 @@ class ImageFile:
         self.dirname, self.fname = os.path.split(self.fpath)
         self.fname_noext = self.fname[:self.fname.index(".nii")]
         self.json_fpath = self.fpath.replace(".nii.gz", ".json").replace(".nii", ".json")
+        self.bval_fpath = self.fpath.replace(".nii.gz", ".bval").replace(".nii", ".bval")
+        self.bvec_fpath = self.fpath.replace(".nii.gz", ".bvec").replace(".nii", ".bvec")
         self.nii = nib.load(self.fpath)
         self.metadata = {}
         if os.path.exists(self.json_fpath):
@@ -42,8 +44,13 @@ class ImageFile:
                 LOG.exception(f"Failed to load JSON sidecar {self.json_fpath} - metadata matching may not work")
         elif warn_json:
             LOG.warn(f"No .JSON metadata for NIFTI file {self.fpath} - metadata matching may not work")
+        if os.path.exists(self.bval_fpath):
+            self.metadata["bval"] = np.loadtxt(self.bval_fpath)
+        if os.path.exists(self.bvec_fpath):
+            self.metadata["bvec"] = np.loadtxt(self.bvec_fpath)
 
-    def save_derived(self, data, fname, copy_json=True):
+
+    def save_derived(self, data, fname, copy_json=True, copy_bdata=False):
         """
         Save 'derived' data which should inherit the affine/header from this
         data file
@@ -58,6 +65,12 @@ class ImageFile:
             new_json_fpath = fname.replace(".nii.gz", ".json").replace(".nii", ".json")
             with open(new_json_fpath, 'w') as fp:
                 json.dump(self.metadata, fp, indent=4, default=lambda o: '<not serializable>')
+        if copy_bdata and os.path.exists(self.bval_fpath):
+            new_bval_fpath = fname.replace(".nii.gz", ".bval").replace(".nii", ".bval")
+            np.savetxt(new_bval_fpath, self.bval)
+        if copy_bdata and os.path.exists(self.bvec_fpath):
+            new_bvec_fpath = fname.replace(".nii.gz", ".bvec").replace(".nii", ".bvec")
+            np.savetxt(new_bvec_fpath, self.bvec)
         return ImageFile(fname, warn_json=False)
 
     def save(self, fname):
@@ -73,6 +86,13 @@ class ImageFile:
             new_json_fpath = fname.replace(".nii.gz", ".json").replace(".nii", ".json")
             with open(new_json_fpath, 'w') as fp:
                 json.dump(self.metadata, fp, indent=4)
+
+        if os.path.exists(self.bval_fpath):
+            new_bval_fpath = fname.replace(".nii.gz", ".bval").replace(".nii", ".bval")
+            np.savetxt(new_bval_fpath, self.bval)
+        if os.path.exists(self.bvec_fpath):
+            new_bvec_fpath = fname.replace(".nii.gz", ".bvec").replace(".nii", ".bvec")
+            np.savetxt(new_bvec_fpath, self.bvec)
 
     def __getattr__(self, attr):
         """
