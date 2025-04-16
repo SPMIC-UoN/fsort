@@ -48,7 +48,33 @@ class MolliCor(Sorter):
         self.select_latest()
         self.save("t1_map", vol=0)
         self.save("t1_conf", vol=1)
-        
+
+
+class DWI(Sorter):
+    def __init__(self):
+        Sorter.__init__(self, "dwi")
+
+    def run(self):
+        self.candidate_set = 2  # DCM2NIIX 2024
+        self.add(seriesdescription="dwi")
+        self.remove(seriesdescription="flipped")
+        self.remove(bval=None)
+        self.select_latest()
+        self.save("dwi")
+
+
+class ASL(Sorter):
+    def __init__(self):
+        Sorter.__init__(self, "asl")
+
+    def run(self):
+        self.add(seriesdescription="pcasl")
+        self.remove(nvols=1)
+        self.save("pcasl")
+        self.add(seriesdescription="fair")
+        self.remove(nvols=1)
+        self.save("fair")
+
 
 SORTERS = [
     T1SERaw(),
@@ -66,4 +92,6 @@ SORTERS = [
     MDixon(name="dixon_cor", seriesdesc_inc="cor_mdixon"),
     MDixon(name="dixon_ax", seriesdesc_inc="mdixon", seriesdesc_exc="cor_mdixon"),
     SeriesDesc("ethrive"),
+    DWI(),
+    ASL(),
 ]
