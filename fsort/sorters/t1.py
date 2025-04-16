@@ -56,9 +56,17 @@ class T1MolliRaw(Sorter):
         Sorter.__init__(self, name, **kwargs)
 
     def run(self):
-        self.add(seriesdescription="t1_molli", nvols=8)
+        self.add(seriesdescription="molli", nvols=8)
+        self.remove(seriesdescription="6.5", reason="6.5mm slice")
         self.remove(seriesdescription="flipped")
         self.remove(imagetype="phase")
+        self.remove(nslices=3, reason="3-slice heart scan")
+        self.remove(seriesdescription="500", reason="TD500 scan addition to TD0 scan")
+        self.remove(seriesdescription="DelREc", reason="delayed reconstruction")
+        if self.count(seriesdescription="highres") > 0:
+            self.filter(seriesdescription="highres", reason="Not high-res and we have other data that is")
+        if self.count(multislice=True) > 0:
+            self.filter(multislice=True, reason="Not multi-slice and we have other data that is")
         self.group("affinedata")
         self.select_latest()
         self.save("t1_molli_raw")
