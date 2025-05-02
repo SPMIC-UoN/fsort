@@ -136,6 +136,8 @@ class ImageFile:
                 match = True
             elif value is None and myval is not None:
                 match = False
+            elif myval is None:
+                match = False
             elif isinstance(myval, float) and isinstance(value, float):
                 match = math.abs(value - myval) < FLOAT_TOL
             elif isinstance(myval, int) and isinstance(value, int):
