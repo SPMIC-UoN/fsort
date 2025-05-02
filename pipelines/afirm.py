@@ -91,7 +91,7 @@ SORTERS = [
     MolliCor(),
     MDixon(name="dixon_cor", seriesdesc_inc="cor_mdixon"),
     MDixon(name="dixon_ax", seriesdesc_inc="mdixon", seriesdesc_exc="cor_mdixon"),
-    SeriesDesc("ethrive"),
+    SeriesDesc("ethrive", seriesdesc=["ethrive", "e-thrive"]),
     DWI(),
     ASL(),
 ]
