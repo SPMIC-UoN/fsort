@@ -2,7 +2,7 @@
 FSORT config for normative data study
 """
 from fsort.sorters import *
-from .afirm import DWI, ASL
+from afirm import DWI, ASL
 
 SORTERS = [
     T1SERaw(),
