@@ -206,15 +206,21 @@ class Fsort:
                             continue
 
                         LOG.debug(f" - Found candidate file {fpath} for vendor {file.vendor}")
-                        if file.vendor or allow_no_vendor:
-                            if file.vendor not in vendor_files :
-                                vendor_files[file.vendor] = []
-                            if not allow_dupes:
-                                dupes = [f for f in vendor_files[file.vendor] if f.hash == file.hash]
-                                if dupes:
-                                    LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - ignoring")
-                                    continue
-                            vendor_files[file.vendor].append(file)
+                        if file.vendor not in vendor_files :
+                            vendor_files[file.vendor] = []
+                        if not allow_dupes:
+                            dupes = [f for f in vendor_files[file.vendor] if f.hash == file.hash]
+                            if dupes:
+                                LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - ignoring")
+                                continue
+                        vendor_files[file.vendor].append(file)
+
+        no_vendor_files = vendor_files.pop(None, [])
+        if allow_no_vendor and no_vendor_files:
+            # No vendor files are added to all vendors
+            for vendor, files in vendor_files.items():
+                vendor_files[vendor] += no_vendor_files
+                LOG.info(f" - Found {len(no_vendor_files)} files with no vendor - adding to {vendor} {no_vendor_files}")
 
         return vendor_files
 
