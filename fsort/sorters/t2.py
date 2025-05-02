@@ -77,3 +77,44 @@ class T2star(Sorter):
         self.group("echotime", allow_none=False)
         self.select_one("seriesnumber", last=False)
         self.save("t2star_e", sort="echotime")
+
+class ScannerT2Map(Sorter):
+    """
+    Scanner generated T2 map
+    """
+    def __init__(self, name="t2_map", **kwargs):
+        Sorter.__init__(self, name, **kwargs)
+
+    def run(self):
+        """
+        T2 data has multiple echos and possibly an extra T2 map to be discarded
+        """
+        num_echos = self.kwargs.get("num_echos", 10)
+        seriesdesc = self.kwargs.get("seriesdesc", ("t2_mapping", "t2 mapping", "t2map_resptrig", "t2map"))
+        found = False
+        for desc in seriesdesc:
+            self.add(seriesdescription=desc, nvols=num_echos+1)
+            if self.have_files():
+                LOG.info(f" - Found multi-echo T2 mapping data with {num_echos+1} volumes")
+                self.select_latest()
+                self.save("t2_map", vol=num_echos)
+                found = True
+                break
+
+        if not found:
+            for desc in seriesdesc:
+                self.add(seriesdescription=desc, expected_number=num_echos+1, nvols=1)
+                if self.have_files():
+                    LOG.info(f" - Found {num_echos+1} single-volume data sets")
+                    self.filter(imagetype="T2 MAP")
+                    if self.have_files():
+                        LOG.info(" - Found T2 MAP data")
+                        self.select_latest()
+                        self.save("t2_map")
+                        found = True
+                        break
+                    else:
+                        LOG.warn("No data set found with T2 MAP - ignoring")
+
+        if not found:
+            LOG.warn("No scanner T2 map found")
