@@ -1,6 +1,7 @@
 import logging
 
 from fsort import Sorter, run
+from fsort.sorters import SeriesDesc, ScannerT2Map, T1SERaw
 
 LOG = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class Dixon(Sorter):
         return n
 
     def run(self):
-        self.candidate_set = 1 # Use alternate dcm2niix
+        self.candidate_set = 0 # Use alternate dcm2niix
         self.dixon_kwargs = {
             "seriesdescription": "dixon",
             "scanningsequence": "rm",
@@ -31,7 +32,7 @@ class Dixon(Sorter):
         for nvols in range(1, 7):
             num_files_by_vols[nvols] = self.count_dixon(nvols=nvols)
             LOG.info(f" - Found {num_files_by_vols[nvols]} {nvols}-volume mDIXON data")
- 
+
         if num_files_by_vols[6] > 0:
             LOG.info(" - Found 6-volume mDIXON data")
             self.add_dixon(nvols=6)
@@ -147,28 +148,29 @@ class Dixon(Sorter):
                 LOG.warn("No usable DIXON data found")
 
 
-class EThrive(Sorter):
+class ADC(Sorter):
     def __init__(self):
-        Sorter.__init__(self, "ethrive")
+        Sorter.__init__(self, "adc")
 
     def run(self):
-        self.add(seriesdescription="e-thrive")
+        self.candidate_set = 1 # Use alternate dcm2niix
+        self.add(fname="dwi")
+        LOG.info(f" - Found {self.count()} DWI files")
+        self.filter(fname="adc")
+        LOG.info(f" - Found {self.count()} ADC files")
         self.select_latest()
-        self.save("ethrive")
+        self.save("adc")
 
-class T2w(Sorter):
-    def __init__(self):
-        Sorter.__init__(self, "t2w")
-
-    def run(self):
-        self.add(seriesdescription="t2w")
-        self.select_latest()
-        self.save("t2w")
 
 SORTERS = [
     Dixon(),
-    EThrive(),
-    T2w(),
+    SeriesDesc("t2w", seriesdesc=["cor_t2w", "t2w"]),
+    SeriesDesc("ethrive", seriesdesc=["ethrive", "e-thrive"]),
+    ScannerT2Map(),
+    SeriesDesc("mre", seriesdesc=["swip_mrelast", "swip mrelast"]),
+    SeriesDesc("mre_qiba", seriesdesc=["swip_qiba", "swip qiba"]),
+    ADC(),
+    T1SERaw(),
 ]
 
 if __name__ == "__main__":
