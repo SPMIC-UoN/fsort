@@ -7,7 +7,7 @@ import sys
 import logging
 
 from ._version import __version__
-from .fsort import Fsort
+from .fsort import Fsort, timestamp
 from . import xnat
 
 LOG = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def main():
         sys.exit(1)
 
     _setup_logging(options)
-    LOG.info(f"FSORT v{__version__}")
+    LOG.info(f"FSORT v{__version__}: start time {timestamp()}")
 
     if not options.dicom and not options.nifti and not options.xnat_host:
         # Assum DICOMS under subject input dir

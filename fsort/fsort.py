@@ -14,6 +14,9 @@ from .image_file import ImageFile
 
 LOG = logging.getLogger(__name__)
 
+def timestamp():
+    return str(datetime.datetime.now())
+
 class Fsort:
     """
     Class to run study-specific FSORT configurations
@@ -68,11 +71,12 @@ class Fsort:
         handler = logging.FileHandler(logfile)
         handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
         logging.getLogger().addHandler(handler)
+        LOG.info(f"Sorting DICOM data: start time {timestamp()}")
         LOG.info(f" - Output dir: {output}")
 
         nifti_sets = []
         if dicom_in:
-            LOG.info(f"DICOM->NIFTI conversion: DICOMS in {dicom_in}")
+            LOG.info(f"DICOM->NIFTI conversion: DICOMS in {dicom_in}: start time {timestamp()}")
             nifti_output = os.path.join(output, "nifti")
             if not niftidirs:
                 niftidirs = []
@@ -94,7 +98,7 @@ class Fsort:
 
         vendor_files = {}
         for idx, niftidirs in enumerate(nifti_sets):
-            LOG.info(f"Scanning NIFTI files in {niftidirs}")
+            LOG.info(f"Scanning NIFTI files in {niftidirs}: start time {timestamp()}")
             set_vendor_files = self._scan_niftis(niftidirs, allow_no_vendor=self._options.allow_no_vendor, allow_dupes=self._options.allow_dupes)
             if not set_vendor_files:
                 LOG.warn(f"No session files found")
@@ -111,17 +115,12 @@ class Fsort:
         if self._config is not None:
             for sorter in self._config.SORTERS:
                 outdir = os.path.join(output, sorter.name)
-                timestamp = self._timestamp()
-                LOG.info(f"FSORT RUNNING {sorter.name.upper()} -> {outdir} : start time {timestamp}")
+                LOG.info(f"FSORT RUNNING {sorter.name.upper()} -> {outdir} : start time {timestamp()}")
                 self._mkdir(outdir)
                 for vendor, file_sets in vendor_files.items():
                     sorter.process_files(file_sets, vendor, outdir)
-                timestamp = self._timestamp()
-                LOG.info(f"FSORT DONE {sorter.name.upper()} : end time {timestamp}")
+                LOG.info(f"FSORT DONE {sorter.name.upper()} : end time {timestamp()}")
         LOG.info(f"FSORT DONE -> {output}")
-
-    def _timestamp(self):
-        return str(datetime.datetime.now())
 
     def _start_logfile(self, output_folder):
         """
