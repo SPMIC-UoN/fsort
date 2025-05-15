@@ -17,6 +17,9 @@ class T1SERaw(Sorter):
         Sorter.__init__(self, name, **kwargs)
 
     def run(self):
+        candidate_set = self.kwargs.get("candidate_set", None)
+        if candidate_set:
+            self.candidate_set = candidate_set
         phase_in_fname = False
         self.add(seriesdescription="t1map")
         self.remove(seriesdescription="flipped")
