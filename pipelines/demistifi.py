@@ -21,6 +21,14 @@ class Molli(Sorter):
         for organ in ["liver", "kidney", "pancreas"]:
             self.add(seriesdescription="molli", imagetype="M")
             self.filter(seriesdescription=organ)
+            if not self.have_files() and organ == "liver":
+                LOG.info("No MOLLI data found for liver, checking for 'generic' naming")
+                self.add(seriesdescription="molli", imagetype="M")
+                self.remove(seriesdescription="kidney")
+                self.remove(seriesdescription="pancreas")
+            if not self.have_files():
+                LOG.warning(f"No MOLLI data found for {organ}, skipping")
+                continue
             self.select_latest()
             self.save(f"molli_{organ}")
             self.clear_selection()
