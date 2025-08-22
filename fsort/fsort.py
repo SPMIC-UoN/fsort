@@ -246,7 +246,7 @@ class Fsort:
                     for name, tag in tags_to_scan.items():
                         name = name.replace("+", "")
                         md = dcm.get(tag, None)
-                        if md:
+                        if md and md.value is not None:
                             dcm_metadata[name] = md.value
                     dicom_tag_dict[series_number].append(dcm_metadata)
                 except:
@@ -254,7 +254,7 @@ class Fsort:
                     pass
 
         for series_number, metadata in dicom_tag_dict.items():
-            metadata.sort(key=lambda x: x.get("InstanceCreationTime", 0))
+            metadata.sort(key=lambda x: float(x.get("InstanceCreationTime", 0)))
 
         for img in nifti_files:
             if img.seriesnumber in dicom_tag_dict:
