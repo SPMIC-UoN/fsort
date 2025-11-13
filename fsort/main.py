@@ -33,7 +33,7 @@ def main():
     FSORT command line entry point
     """
     parser = argparse.ArgumentParser(f'File pre-sorter v{__version__}', add_help=True)
-    parser.add_argument('--config', help='Path to Python configuration file', required=True)
+    parser.add_argument('--config', help='Path to Python configuration file or name of Python module', required=True)
     parser.add_argument('--dicom', help='Path to DICOM input. If --input or --subjects-file-has-dir this is a relative path')
     parser.add_argument('--nifti', help='Path to NIFTI input. If --input or --subjects-file-has-dir these are relative paths', nargs="*")
     parser.add_argument("--input", "--subjects-dir", help="Input base directory. Subject ID will be appended if not already present")
