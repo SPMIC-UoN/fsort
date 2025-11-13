@@ -85,7 +85,7 @@ class ImageFile:
         if os.path.exists(self.json_fpath):
             new_json_fpath = fname.replace(".nii.gz", ".json").replace(".nii", ".json")
             with open(new_json_fpath, 'w') as fp:
-                json.dump(self.metadata, fp, indent=4)
+                json.dump(self.metadata, fp, indent=4, default=lambda o: '<not serializable>')
 
         if os.path.exists(self.bval_fpath):
             new_bval_fpath = fname.replace(".nii.gz", ".bval").replace(".nii", ".bval")
@@ -151,6 +151,15 @@ class ImageFile:
             elif match_type == "contains" and isinstance(myval, str) and isinstance(value, list):
                 match = any([v.lower() in myval for v in value])
             elif match_type == "contains" and isinstance(myval, list) and isinstance(value, list):
+                myval = [v.lower() for v in myval]
+                match = any([v.lower() in myval for v in value])
+            elif match_type == "exact" and isinstance(myval, str) and isinstance(value, str):
+                match = value.lower() == myval.lower()
+            elif match_type == "exact" and isinstance(myval, list) and isinstance(value, str):
+                match = value.lower() in [v.lower() for v in myval]
+            elif match_type == "exact" and isinstance(myval, str) and isinstance(value, list):
+                match = any([v.lower() == myval for v in value])
+            elif match_type == "exact" and isinstance(myval, list) and isinstance(value, list):
                 myval = [v.lower() for v in myval]
                 match = any([v.lower() in myval for v in value])
             else:
