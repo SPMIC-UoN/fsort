@@ -232,16 +232,23 @@ class Sorter:
                 LOG.debug(f" - Selecting one of {len(files)} files for key {key}")
                 selected, value = self._one_file(files, attr, last)
                 LOG.debug(f" - {selected}, {attr}={value}")
-                new_groups[key] = [selected]
+                if selected is None:
+                    selected = files[0]
+                    if len(files) > 1:
+                        LOG.warn(f" - No valid value found for attribute {attr} in group {key} - selected first in list")
                 if len(files) > 1 and warn:
                     discarded = [f.fname for f in files if f != selected]
                     LOG.warn(f" - Select single file - keeping {selected.fname} with {attr}={value} and discarding {len(files)-1} files for group {key}: {discarded}")
+                new_groups[key] = [selected]
                 self.selected.append(selected)
 
     def _one_file(self, files, attr, last):
         selected, selected_value = None, None
         for f in files:
             f_value = getattr(f, attr)
+            if f_value is None:
+                # Ignore files with no value for this attribute
+                continue
             if selected_value is None or (last and f_value > selected_value) or (not last and f_value < selected_value):
                 selected_value = f_value
                 selected = f
