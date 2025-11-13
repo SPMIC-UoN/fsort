@@ -6,7 +6,10 @@ import argparse
 import logging
 import os
 
-import xnat_nott
+try:
+    import xnat_nott
+except ImportError:
+    xnat_nott = None
 
 LOG = logging.getLogger(__name__)
 
@@ -24,6 +27,9 @@ def get_sessions(fsort_options):
     :return: Sequence of sessions, each having attributes: output (path to
              output folder), dicom (path to downloaded DICOMs)
     """
+    if xnat_nott is None:
+        raise RuntimeError("XNAT_NOTT is not installed - cannot get data from XNAT server")
+
     options = argparse.Namespace()
     for k, v in fsort_options.__dict__.items():
         if k.startswith("xnat"):

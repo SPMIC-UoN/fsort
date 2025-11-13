@@ -1,21 +1,24 @@
 """
 FSORT: Run study-specific FSORT configurations
 """
+
 import datetime
 import importlib
 import logging
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 from .image_file import ImageFile
 
 LOG = logging.getLogger(__name__)
 
+
 def timestamp():
     return str(datetime.datetime.now())
+
 
 class Fsort:
     """
@@ -31,7 +34,7 @@ class Fsort:
     def __init__(self, options):
         """
         Loads configuration from the options.config attribute
-        
+
         This is a Python module defining sorters for the Fsort run
         """
         self._options = options
@@ -67,30 +70,47 @@ class Fsort:
             raise RuntimeError("Output folder not specified and could not be derived from input")
         if self._options.output_subfolder:
             output = os.path.join(output, self._options.output_subfolder)
-        self._mkdir(output, wipe=False)  # Do not wipe in case we are re-using dicoms/niftis
+        self._mkdir(
+            output, wipe=False
+        )  # Do not wipe in case we are re-using dicoms/niftis
         logfile = os.path.join(output, "logfile.txt")
         if os.path.exists(logfile):
             os.remove(logfile)
         handler = logging.FileHandler(logfile)
-        handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
         logging.getLogger().addHandler(handler)
         LOG.info(f"Sorting DICOM data: start time {timestamp()}")
         LOG.info(f" - Output dir: {output}")
 
         nifti_sets = []
         if dicom_in:
-            LOG.info(f"DICOM->NIFTI conversion: DICOMS in {dicom_in}: start time {timestamp()}")
+            LOG.info(
+                f"DICOM->NIFTI conversion: DICOMS in {dicom_in}: start time {timestamp()}"
+            )
             nifti_output = os.path.join(output, "nifti")
             if not niftidirs:
                 niftidirs = []
 
             for idx, dcm2niix in enumerate(self._options.dcm2niix):
                 niftidir_dcm2niix = os.path.join(nifti_output, f"dcm2niix_{idx}")
-                if self._options.skip_dcm2niix and os.path.exists(niftidir_dcm2niix) and os.listdir(niftidir_dcm2niix):
-                    LOG.info(f" - NIFTI files already found in {niftidir_dcm2niix} - skipping dcm2niix conversion")
+                if (
+                    self._options.skip_dcm2niix
+                    and os.path.exists(niftidir_dcm2niix)
+                    and os.listdir(niftidir_dcm2niix)
+                ):
+                    LOG.info(
+                        f" - NIFTI files already found in {niftidir_dcm2niix} - skipping dcm2niix conversion"
+                    )
                 else:
-                    LOG.info(f" - Converting to nifti using {dcm2niix} output in {niftidir_dcm2niix}")
-                    self._dcm2niix(dicom_in, niftidir_dcm2niix, dcm2niix, self._options.dcm2niix_args)
+                    LOG.info(
+                        f" - Converting to nifti using {dcm2niix} output in {niftidir_dcm2niix}"
+                    )
+                    self._dcm2niix(
+                        dicom_in,
+                        niftidir_dcm2niix,
+                        dcm2niix,
+                        self._options.dcm2niix_args,
+                    )
 
                 niftidirs_dcm2niix = list(niftidirs) + [niftidir_dcm2niix]
                 nifti_sets.append(niftidirs_dcm2niix)
@@ -102,14 +122,18 @@ class Fsort:
         vendor_files = {}
         for idx, niftidirs in enumerate(nifti_sets):
             LOG.info(f"Scanning NIFTI files in {niftidirs}: start time {timestamp()}")
-            set_vendor_files = self._scan_niftis(niftidirs, allow_no_vendor=self._options.allow_no_vendor, allow_dupes=self._options.allow_dupes)
+            set_vendor_files = self._scan_niftis(
+                niftidirs,
+                allow_no_vendor=self._options.allow_no_vendor,
+                allow_dupes=self._options.allow_dupes,
+            )
             if not set_vendor_files:
-                LOG.warn(f"No session files found")
+                LOG.warn("No session files found")
             else:
                 for vendor, files in set_vendor_files.items():
                     LOG.info(f" - Vendor: {vendor} ({len(files)} files)")
                     if dicom_in:
-                        LOG.info(f" - Linking DICOM data")
+                        LOG.info(" - Linking DICOM data")
                         self._link_niftis_to_dicoms(files, dicom_in)
                     if vendor not in vendor_files:
                         vendor_files[vendor] = {}
@@ -118,7 +142,9 @@ class Fsort:
         if self._config is not None:
             for sorter in self._config.SORTERS:
                 outdir = os.path.join(output, sorter.name)
-                LOG.info(f"FSORT RUNNING {sorter.name.upper()} -> {outdir} : start time {timestamp()}")
+                LOG.info(
+                    f"FSORT RUNNING {sorter.name.upper()} -> {outdir} : start time {timestamp()}"
+                )
                 self._mkdir(outdir)
                 for vendor, file_sets in vendor_files.items():
                     sorter.process_files(file_sets, vendor, outdir)
@@ -138,7 +164,9 @@ class Fsort:
         if self._logfile_handler is not None:
             logging.getLogger().removeHandler(self._logfile_handler)
         self._logfile_handler = logging.FileHandler(logfile)
-        self._logfile_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+        self._logfile_handler.setFormatter(
+            logging.Formatter("%(levelname)s: %(message)s")
+        )
         logging.getLogger().addHandler(self._logfile_handler)
 
     def _mkdir(self, dirname, wipe=True):
@@ -147,7 +175,9 @@ class Fsort:
         """
         if os.path.exists(dirname):
             if not self._options.overwrite:
-                raise RuntimeError(f"Output directory {dirname} already exists - use --overwrite to remove")
+                raise RuntimeError(
+                    f"Output directory {dirname} already exists - use --overwrite to remove"
+                )
             elif wipe:
                 shutil.rmtree(dirname)
             else:
@@ -163,7 +193,9 @@ class Fsort:
         """
         self._mkdir(niftidir)
         args = args.split()
-        dcm2niix_cmd = [dcm2niix_exec, "-o", niftidir] + args + ["-d", "0", "-z", "y", "-b", "y"]
+        dcm2niix_cmd = (
+            [dcm2niix_exec, "-o", niftidir] + args + ["-d", "0", "-z", "y", "-b", "y"]
+        )
         scandirs = []
         num_files = 0
         for root, _dirs, files in os.walk(dicomdir, topdown=False, followlinks=True):
@@ -180,9 +212,11 @@ class Fsort:
                     output = subprocess.check_output(cmd)
                     LOG.debug(output)
                 except subprocess.CalledProcessError as exc:
-                    LOG.warn(f"{dcm2niix_exec} failed for {scandir} with exit code {exc.returncode}")
+                    LOG.warn(
+                        f"{dcm2niix_exec} failed for {scandir} with exit code {exc.returncode}"
+                    )
                     LOG.warn(exc.output)
-        
+
         with open(os.path.join(niftidir, "num_dicoms.txt"), "w") as f:
             f.write("%i\n" % num_files)
 
@@ -204,16 +238,26 @@ class Fsort:
                             fpath = os.path.join(path, fname)
                             file = ImageFile(fpath, warn_json=True)
                         except Exception:
-                            LOG.exception(f"Failed to load NIFTI file {fpath} - ignoring")
+                            LOG.exception(
+                                f"Failed to load NIFTI file {fpath} - ignoring"
+                            )
                             continue
 
-                        LOG.debug(f" - Found candidate file {fpath} for vendor {file.vendor}")
-                        if file.vendor not in vendor_files :
+                        LOG.debug(
+                            f" - Found candidate file {fpath} for vendor {file.vendor}"
+                        )
+                        if file.vendor not in vendor_files:
                             vendor_files[file.vendor] = []
                         if not allow_dupes:
-                            dupes = [f for f in vendor_files[file.vendor] if f.hash == file.hash]
+                            dupes = [
+                                f
+                                for f in vendor_files[file.vendor]
+                                if f.hash == file.hash
+                            ]
                             if dupes:
-                                LOG.warn(f"{fpath} is exact duplicate of existing file {dupes[0].fname} - ignoring")
+                                LOG.warn(
+                                    f"{fpath} is exact duplicate of existing file {dupes[0].fname} - ignoring"
+                                )
                                 continue
                         vendor_files[file.vendor].append(file)
 
@@ -222,25 +266,28 @@ class Fsort:
             # No vendor files are added to all vendors
             for vendor, files in vendor_files.items():
                 vendor_files[vendor] += no_vendor_files
-                LOG.info(f" - Found {len(no_vendor_files)} files with no vendor - adding to {vendor} {no_vendor_files}")
+                LOG.info(
+                    f" - Found {len(no_vendor_files)} files with no vendor - adding to {vendor} {no_vendor_files}"
+                )
 
         return vendor_files
 
     def _link_niftis_to_dicoms(self, nifti_files, dicomdir):
         tags_to_scan = {
-            "InstanceCreationTime" : (0x0008, 0x0013),
-            "InversionTimeDelay" : (0x2005, 0x1572),
-            "NumberInversionDelays" : (0x2005, 0x1571),
-            "HeartRate" : (0x0018,0x1088),
-            "InversionTimeDelay+" : (0x0018, 0x0082),
+            "InstanceCreationTime": (0x0008, 0x0013),
+            "InversionTimeDelay": (0x2005, 0x1572),
+            "NumberInversionDelays": (0x2005, 0x1571),
+            "HeartRate": (0x0018, 0x1088),
+            "InversionTimeDelay+": (0x0018, 0x0082),
         }
-        
+
         dicom_tag_dict = {}
         for root, _dirs, files in os.walk(dicomdir, topdown=False, followlinks=True):
             for fname in files:
                 fpath = os.path.join(root, fname)
                 try:
                     import pydicom
+
                     dcm = pydicom.dcmread(fpath)
                     series_number = dcm["SeriesNumber"].value
                     if series_number not in dicom_tag_dict:
@@ -252,7 +299,7 @@ class Fsort:
                         if md and md.value is not None:
                             dcm_metadata[name] = md.value
                     dicom_tag_dict[series_number].append(dcm_metadata)
-                except:
+                except Exception:
                     # May not be a DICOM
                     pass
 
@@ -265,4 +312,6 @@ class Fsort:
                 for name in tags_to_scan:
                     name = name.replace("+", "")
                     # FIXME is it always right to sort by value?
-                    img.metadata[name] = sorted([v[name] for v in dcm_metadata if name in v])
+                    img.metadata[name] = sorted(
+                        [v[name] for v in dcm_metadata if name in v]
+                    )

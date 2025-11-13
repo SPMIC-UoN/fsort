@@ -1,12 +1,14 @@
 """
 FSORT: Identifying and copying files for a particular purpose
 """
+
 import logging
 import os
 
 import numpy as np
 
 LOG = logging.getLogger(__name__)
+
 
 class Sorter:
     """
@@ -37,12 +39,16 @@ class Sorter:
         """
         self.selected = []
         self.groups = {}
-        self._scale_attribute, self._scale_factor, self._scale_inverse = None, None, None
+        self._scale_attribute, self._scale_factor, self._scale_inverse = (
+            None,
+            None,
+            None,
+        )
 
     @property
     def candidates(self):
         return self._candidates
-    
+
     @candidates.setter
     def candidates(self, files):
         self._candidates = files
@@ -68,7 +74,9 @@ class Sorter:
     def outdir(self, outdir):
         self._outdir = outdir
         with open(self.manifest_fname, "w") as mf:
-            mf.write("source\tdestination\tvolume\tscale_factor\tscale_const\tscale_attribute\tscale_inverse\n")
+            mf.write(
+                "source\tdestination\tvolume\tscale_factor\tscale_const\tscale_attribute\tscale_inverse\n"
+            )
 
     @property
     def manifest_fname(self):
@@ -77,7 +85,7 @@ class Sorter:
     def process_files(self, file_sets, vendor, outdir):
         """
         Process a set of candidate files
-        
+
         :param files: Sequence of ImageFile objects
         :param vendor: Vendor name
         :param outdir: Output directory to write files for
@@ -94,7 +102,9 @@ class Sorter:
         """
         This method must be implemented by the subclass to perform required matching operations
         """
-        raise NotImplementedError(f"run() has not been implemented for sorter {self.name}")
+        raise NotImplementedError(
+            f"run() has not been implemented for sorter {self.name}"
+        )
 
     def _match(self, match_type=CONTAINS, candidates=None, **kwargs):
         matches = []
@@ -128,7 +138,9 @@ class Sorter:
             allowed = any([num_found == num for num in np.atleast_1d(expected_number)])
 
         if num_found > 0 and not allowed:
-            LOG.warn(f" - Expected {expected_number} files, found {len(to_add)} - not adding")
+            LOG.warn(
+                f" - Expected {expected_number} files, found {len(to_add)} - not adding"
+            )
             return 0
         else:
             self.selected.extend(to_add)
@@ -140,8 +152,14 @@ class Sorter:
         """
         Count matching selected files
         """
-        return len(self._match(candidates=self.selected if not count_candidates else None, match_type=match_type, **kwargs))
-    
+        return len(
+            self._match(
+                candidates=self.selected if not count_candidates else None,
+                match_type=match_type,
+                **kwargs,
+            )
+        )
+
     def remove(self, match_type=CONTAINS, reason=None, **kwargs):
         """
         Remove files previously added
@@ -178,16 +196,26 @@ class Sorter:
         if self._scale_factor is not None:
             LOG.warn(" - Scaling factor already defined - overriding")
         if not isinstance(inverse, list):
-            inverse = [inverse,]
+            inverse = [
+                inverse,
+            ]
         if not attribute:
             attribute = []
         if not isinstance(attribute, list):
-            attribute = [attribute,]
+            attribute = [
+                attribute,
+            ]
         if len(attribute) > 1 and len(inverse) == 1:
             inverse = inverse * len(attribute)
         if len(attribute) > 0 and len(inverse) > 0 and len(inverse) != len(attribute):
-            raise RuntimeError("List of scale attributes and inverse flags must have the same length")
-        self._scale_factor, self._scale_attribute, self._scale_inverse = factor, attribute, inverse
+            raise RuntimeError(
+                "List of scale attributes and inverse flags must have the same length"
+            )
+        self._scale_factor, self._scale_attribute, self._scale_inverse = (
+            factor,
+            attribute,
+            inverse,
+        )
 
     def group(self, *attrs, **kwargs):
         """
@@ -198,7 +226,9 @@ class Sorter:
         for f in self.selected:
             key = tuple([getattr(f, attr) for attr in attrs])
             if None in key and not allow_none:
-                LOG.warn(f" - Group: ignoring file {f.fname}, {key} contains None values")
+                LOG.warn(
+                    f" - Group: ignoring file {f.fname}, {key} contains None values"
+                )
                 continue
 
             if key not in self.groups:
@@ -216,13 +246,13 @@ class Sorter:
     def select_one(self, attr, last=True, warn=True):
         """
         Select a single file from each group
-        
+
         :param attr: Attribute to use for ordering
         :param last: If True, select last, otherwise select first type-specific ordering
         :param warn: Warn about discarded files
         """
         if not self.groups:
-            self.groups = {None : self.selected}
+            self.groups = {None: self.selected}
         self.selected = []
         new_groups = {}
         for key, files in self.groups.items():
@@ -266,8 +296,10 @@ class Sorter:
                     LOG.warn(f" - No attribute {attr} found for scaling - ignoring")
                     continue
                 if inverse:
-                    factor = 1.0/factor
-                LOG.info(f" - Scaling {f.fname} using attribute {attr}, inverse={inverse} ({factor})")
+                    factor = 1.0 / factor
+                LOG.info(
+                    f" - Scaling {f.fname} using attribute {attr}, inverse={inverse} ({factor})"
+                )
                 overall_factor *= float(factor)
         if self._scale_factor is not None:
             overall_factor *= float(self._scale_factor)
@@ -276,23 +308,41 @@ class Sorter:
             LOG.info(f" - Overall scaling of {f.fname} by factor {overall_factor}")
         return overall_factor
 
-    def save(self, prefix, vol=None, symlink=False, match_type=CONTAINS, sort=None, **matchers):
+    def save(
+        self,
+        prefix,
+        vol=None,
+        symlink=False,
+        match_type=CONTAINS,
+        sort=None,
+        embed_sort_attr=False,
+        **matchers,
+    ):
         if symlink and (self._scale_factor is not None or vol is not None):
-            raise RuntimeError("Cannot symlink output files when scaling and/or volume selection is being used")
+            raise RuntimeError(
+                "Cannot symlink output files when scaling and/or volume selection is being used"
+            )
 
         manifest = []
         num_matches = self.count(match_type, **matchers)
         LOG.debug(f" - Unsorted files: {self.selected}")
         n = 1
         if sort is not None:
-            sorted_files = sorted(self.selected, key=lambda x: getattr(x, sort) if getattr(x, sort) is not None else 0)
+            sorted_files = sorted(
+                self.selected,
+                key=lambda x: getattr(x, sort) if getattr(x, sort) is not None else 0,
+            )
         else:
             sorted_files = self.selected
         LOG.debug(f" - Sorted files: {sorted_files} {self.selected}")
         for file in sorted_files:
             if file.matches(match_type=match_type, **matchers):
                 if num_matches > 1:
-                    fname = f"{prefix}_{n}.nii.gz"
+                    if embed_sort_attr and sort is not None:
+                        sort_val = getattr(file, sort, n)
+                    else:
+                        sort_val = n
+                    fname = f"{prefix}_{sort_val}.nii.gz"
                     json_fname = f"{prefix}_{n}.json"
                 else:
                     fname = f"{prefix}.nii.gz"
@@ -310,8 +360,12 @@ class Sorter:
                         if isinstance(vol, int):
                             vol = [vol]
                         if max(vol) >= fdata.shape[-1]:
-                            raise ValueError(f"Attempting to select volume {vol} but data from {file.fname} only has {fdata.shape[-1]} volumes")
-                        fdata_new = np.zeros(list(fdata.shape[:3]) + [len(vol)], dtype=fdata.dtype)
+                            raise ValueError(
+                                f"Attempting to select volume {vol} but data from {file.fname} only has {fdata.shape[-1]} volumes"
+                            )
+                        fdata_new = np.zeros(
+                            list(fdata.shape[:3]) + [len(vol)], dtype=fdata.dtype
+                        )
                         for idx, v in enumerate(vol):
                             fdata_new[..., idx] = fdata[..., v]
                         fdata = fdata_new
@@ -319,9 +373,19 @@ class Sorter:
                             fdata = np.squeeze(fdata, axis=3)
                     if self._scale_factor is not None:
                         sf = self._get_scale_factor(file)
-                        fdata = sf*fdata
+                        fdata = sf * fdata
                     file.save_derived(fdata, fpath, copy_bdata=True)
-                manifest.append((file.fname, fname, vol, sf, self._scale_factor, self._scale_attribute, self._scale_inverse))
+                manifest.append(
+                    (
+                        file.fname,
+                        fname,
+                        vol,
+                        sf,
+                        self._scale_factor,
+                        self._scale_attribute,
+                        self._scale_inverse,
+                    )
+                )
                 n += 1
 
         with open(self.manifest_fname, "a") as mf:
