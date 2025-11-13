@@ -37,18 +37,19 @@ class Fsort:
         self._options = options
         self._logfile_handler = None
         if options.config:
-            options.config = os.path.abspath(os.path.normpath(options.config))
-            config_dirname, config_fname = os.path.split(options.config)
-
             try:
-                LOG.info(f"Loading sorter configuration from {options.config}")
-                sys.path.append(config_dirname)
-                self._config = importlib.import_module(config_fname.replace(".py", ""))
+                LOG.info(f" - Loading configuration from {options.config}")
+                self._config = importlib.import_module(options.config)
             except ImportError:
-                LOG.exception("Loading config")
-                raise ValueError(f"Could not load configuration {options.config} - make sure file exists and has extension .py")
-            finally:
-                sys.path.remove(config_dirname)
+                config_dirname, config_fname = os.path.split(os.path.abspath(os.path.normpath(options.config)))
+                try:
+                    sys.path.append(config_dirname)
+                    self._config = importlib.import_module(config_fname.replace(".py", ""))
+                except ImportError:
+                    LOG.exception("Loading config")
+                    raise ValueError(f"Could not load configuration {options.config} - must be a python module or file")
+                finally:
+                    sys.path.remove(config_dirname)
         else:
             LOG.info("No pipeline sorter provided - will perform dcm2niix only")
             self._config = None
@@ -62,6 +63,8 @@ class Fsort:
         metadata for each file. Then we pass the file list to each of the
         Sorter modules in turn to extract and rename the files it needs
         """
+        if not output:
+            raise RuntimeError("Output folder not specified and could not be derived from input")
         if self._options.output_subfolder:
             output = os.path.join(output, self._options.output_subfolder)
         self._mkdir(output, wipe=False)  # Do not wipe in case we are re-using dicoms/niftis
