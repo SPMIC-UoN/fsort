@@ -6,7 +6,7 @@ import json
 import logging
 import math
 import os
-import shutil
+import re
 
 import numpy as np
 import nibabel as nib
@@ -38,16 +38,19 @@ class ImageFile:
         self.metadata = {}
         if os.path.exists(self.json_fpath):
             try:
-                with open(self.json_fpath) as f:
-                    self.metadata = json.load(f)
+                with open(self.json_fpath, "r", encoding="utf-8", errors="ignore") as f:
+                    json_text = f.read()
+                # Remove invalid chars
+                json_text = re.sub(r'[\x00-\x1f]+', '', json_text)
+                self.metadata = json.loads(json_text)
             except:
                 LOG.exception(f"Failed to load JSON sidecar {self.json_fpath} - metadata matching may not work")
         elif warn_json:
             LOG.warn(f"No .JSON metadata for NIFTI file {self.fpath} - metadata matching may not work")
         if os.path.exists(self.bval_fpath):
-            self.metadata["bval"] = np.loadtxt(self.bval_fpath)
+            self.metadata["bval"] = np.atleast_1d(np.loadtxt(self.bval_fpath))
         if os.path.exists(self.bvec_fpath):
-            self.metadata["bvec"] = np.loadtxt(self.bvec_fpath)
+            self.metadata["bvec"] = np.atleast_1d(np.loadtxt(self.bvec_fpath))
 
 
     def save_derived(self, data, fname, copy_json=True, copy_bdata=False):
@@ -162,6 +165,8 @@ class ImageFile:
             elif match_type == "exact" and isinstance(myval, list) and isinstance(value, list):
                 myval = [v.lower() for v in myval]
                 match = any([v.lower() in myval for v in value])
+            elif match_type == "len" and isinstance(value, int):
+                match = len(myval) == value
             else:
                 raise NotImplementedError(f"Don't know how to test type {type(myval)} {match_type} {type(value)}")
 
