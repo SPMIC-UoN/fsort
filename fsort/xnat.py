@@ -92,7 +92,7 @@ def get_sessions(fsort_options):
             LOG.info(f" - Already downloaded - skipping")
         else:
             os.makedirs(xnat_session.output, exist_ok=True)
-            xnat_nott.get_session_dicoms(options, session, xnat_session.dicom)
+            xnat_nott.get_session_dicoms(options, session["ID"], xnat_session.dicom)
         xnat_sessions.append(xnat_session)
 
     return xnat_sessions
