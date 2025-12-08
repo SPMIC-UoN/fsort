@@ -59,6 +59,7 @@ class DWI(Sorter):
         self.add(seriesdescription="dwi")
         self.remove(seriesdescription="flipped")
         self.remove(bval=None)
+        self.remove(bval=0, match_type="len")
         self.select_latest()
         self.save("dwi")
 
@@ -76,6 +77,30 @@ class ASL(Sorter):
         self.save("fair")
 
 
+class GenericDixon(Sorter):
+    def __init__(self):
+        Sorter.__init__(self, "dixon_generic")
+
+    def run(self):
+        maps = {
+            "water" : ["water"],
+            "fat" : ["fat"],
+            "fat_fraction" : ["fatfrac", "fat_frac"],
+        }
+        for map, keywords in maps.items():
+            for kw in keywords:
+                self.add(seriesdescription="dixon", nvols=1)
+                self.remove(seriesdescription="mdixon")
+                if self.count(seriesdescription=kw):
+                    self.filter(seriesdescription=kw)
+                else:
+                    self.filter(imagetype=kw)
+                if self.have_files():
+                    self.select_latest()
+                    self.save(map)
+                    self.clear_selection()
+                    break
+
 SORTERS = [
     T1SERaw(),
     T1MolliRaw(),
@@ -91,6 +116,7 @@ SORTERS = [
     MolliCor(),
     MDixon(name="dixon_cor", seriesdesc_inc="cor_mdixon"),
     MDixon(name="dixon_ax", seriesdesc_inc="mdixon", seriesdesc_exc="cor_mdixon"),
+    GenericDixon(),
     SeriesDesc("ethrive", seriesdesc=["ethrive", "e-thrive"]),
     DWI(),
     ASL(),
