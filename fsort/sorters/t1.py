@@ -60,7 +60,7 @@ class T1MolliRaw(Sorter):
 
     def run(self):
         self.add(seriesdescription="molli", nvols=8)
-        self.remove(seriesdescription="6.5", reason="6.5mm slice")
+        self.remove(seriesdescription="_6.5", reason="6.5mm slice")
         self.remove(seriesdescription="flipped")
         self.remove(imagetype="phase")
         self.remove(nslices=3, reason="3-slice heart scan")
@@ -75,7 +75,7 @@ class T1MolliRaw(Sorter):
         self.save("t1_molli_raw")
 
 
-class T11MolliMapOrRaw(Sorter):
+class T1MolliMapOrRaw(Sorter):
     """
     T1 MOLLI mapping data or raw MOLLI images if no map available
     
@@ -93,6 +93,8 @@ class T11MolliMapOrRaw(Sorter):
             self.filter(imagetype="MAP")
         if not self.have_files():
             self.add(seriesdescription="molli", imagetype="MIXED")
+        if not self.have_files():
+            self.add(seriesdescription="molli")
 
     def _filter_std(self):
         self.remove(nslices=3, reason="3-slice heart scan")
