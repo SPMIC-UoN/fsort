@@ -20,7 +20,7 @@ class T2(Sorter):
         """
         self.candidate_set = self.kwargs.get("candidate_set", 0)
         num_echos = self.kwargs.get("num_echos", 10)
-        seriesdesc = self.kwargs.get("seriesdesc", ("t2_mapping", "t2 mapping", "t2map_resptrig", "t2map"))
+        seriesdesc = self.kwargs.get("seriesdesc", ("t2_mapping_resptrig", "t2_mapping", "t2 mapping", "t2map_resptrig", "t2map"))
         for desc in seriesdesc:
             LOG.info(f" - Looking for T2 mapping data with {num_echos} or {num_echos+1} volumes")
             self.add(seriesdescription=desc, nvols=num_echos)
