@@ -14,6 +14,9 @@ import nibabel as nib
 LOG = logging.getLogger(__name__)
 FLOAT_TOL = 1e-3
 
+def _norm(s):
+    return s.lower().replace(" ", "_").replace("-", "_")
+
 class ImageFile:
     """
     FSORT: An image file and associated metadata
@@ -148,23 +151,23 @@ class ImageFile:
             elif isinstance(myval, (list, tuple)) and isinstance(value, (list, tuple)):
                 match = np.allclose(list(value), list(myval))
             elif match_type == "contains" and isinstance(myval, str) and isinstance(value, str):
-                match = value.lower() in myval.lower()
+                match = _norm(value) in _norm(myval)
             elif match_type == "contains" and isinstance(myval, list) and isinstance(value, str):
-                match = value.lower() in [v.lower() for v in myval]
+                match = _norm(value) in [_norm(v) for v in myval]
             elif match_type == "contains" and isinstance(myval, str) and isinstance(value, list):
-                match = any([v.lower() in myval for v in value])
+                match = any([_norm(v) in _norm(myval) for v in value])
             elif match_type == "contains" and isinstance(myval, list) and isinstance(value, list):
-                myval = [v.lower() for v in myval]
-                match = any([v.lower() in myval for v in value])
+                myval = [_norm(v) for v in myval]
+                match = any([_norm(v) in myval for v in value])
             elif match_type == "exact" and isinstance(myval, str) and isinstance(value, str):
-                match = value.lower() == myval.lower()
+                match = _norm(value) == _norm(myval)
             elif match_type == "exact" and isinstance(myval, list) and isinstance(value, str):
-                match = value.lower() in [v.lower() for v in myval]
+                match = _norm(value) in [_norm(v) for v in myval]
             elif match_type == "exact" and isinstance(myval, str) and isinstance(value, list):
-                match = any([v.lower() == myval for v in value])
+                match = any([_norm(v) == _norm(myval) for v in value])
             elif match_type == "exact" and isinstance(myval, list) and isinstance(value, list):
-                myval = [v.lower() for v in myval]
-                match = any([v.lower() in myval for v in value])
+                myval = [_norm(v) for v in myval]
+                match = any([_norm(v) in myval for v in value])
             elif match_type == "len" and isinstance(value, int):
                 match = len(myval) == value
             else:
@@ -301,7 +304,7 @@ class ImageFile:
         :param keep_case: If False, string values are lowercased before being returned
         """
         for k in self.metadata:
-            if k.lower() == key.lower():
+            if _norm(k) == _norm(key):
                 key = k
         val = self.metadata.get(key, default)
         if isinstance(val, str) and not keep_case:
