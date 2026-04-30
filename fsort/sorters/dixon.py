@@ -62,3 +62,22 @@ class MDixon(Sorter):
                     self.select_latest()      
                     self.save("t2star")
                     break
+
+class RawDixon(Sorter):
+    def __init__(self, includes=None, excludes=None, **kwargs):
+        Sorter.__init__(self, "raw_dixon", **kwargs)
+        self.dixon_includes = {
+            "seriesdescription": "dixon",
+        }
+        self.dixon_excludes = {}
+        if includes is not None:
+            self.dixon_includes.update(includes)
+        if excludes is not None:
+            self.dixon_excludes.update(excludes)
+
+    def run(self):
+        self.candidate_set = self.kwargs.get("candidate_set", 1)
+        self.add(**self.dixon_includes)
+        for k, v in self.dixon_excludes.items():
+            self.remove(**{k: v})
+        self.save("raw_dixon")
