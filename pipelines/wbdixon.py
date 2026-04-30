@@ -26,16 +26,23 @@ class RawDixon(Sorter):
 
     def run(self):
         self._select()
-        series_numbers = [f.seriesnumber for f in self.selected]
+        series_numbers = sorted(set([f.seriesnumber for f in self.selected]))
         for idx, seriesnumber in enumerate(sorted(series_numbers)):
             self._select(seriesnumber=seriesnumber)
             LOG.info(f" - Found {len(self.selected)} files for series number {seriesnumber}")
-            self.save(f"raw_dixon_series_{idx+1}")
+            self.save(f"raw_dixon_series_{idx+1}", sort="nvols")
 
 SORTERS = [
     RawDixon(
-        includes={"seriesdescription" : "mdixon-quant"},
-        excludes={"imagetype" : "PHASE", "seriesdescription" : "12echoes"}
+        includes={
+            "seriesdescription" : "mdixon-quant"
+        },
+        excludes={
+            "imagetype" : "PHASE",
+            "seriesdescription" : "12echoes",
+            "phaseencodingaxis" : "j",
+            "seriesdescription" : "mobiview"
+        }
     ),
 ]
 
