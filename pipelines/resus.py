@@ -1,28 +1,10 @@
 import logging
 
 from fsort import Sorter, run
-from fsort.sorters import SeriesDesc, ScannerT2Map, T1SERaw, T2, MTR
+from fsort.sorters import SeriesDesc, ScannerT2Map, T1SERaw, T2, MTR, RawDixon
 
 LOG = logging.getLogger(__name__)
 
-class RawDixon(Sorter):
-    def __init__(self, includes=None, excludes=None):
-        Sorter.__init__(self, "raw_dixon")
-        self.dixon_includes = {
-            "seriesdescription": "dixon",
-        }
-        self.dixon_excludes = {}
-        if includes is not None:
-            self.dixon_includes.update(includes)
-        if excludes is not None:
-            self.dixon_excludes.update(excludes)
-
-    def run(self):
-        self.candidate_set = 1 # Use alternate dcm2niix
-        self.add(**self.dixon_includes)
-        for k, v in self.dixon_excludes.items():
-            self.remove(**{k: v})
-        self.save("raw_dixon")
 
 class Dixon(Sorter):
     def __init__(self):
@@ -194,7 +176,7 @@ class ADC(Sorter):
 
 SORTERS = [
     Dixon(),
-    RawDixon(includes={"seriesdescription" : "mdixon-quant"}, excludes={"imagetype" : "PHASE", "seriesdescription" : "12echoes"}),
+    RawDixon(includes={"seriesdescription" : "mdixon-quant"}, excludes={"imagetype" : "PHASE", "seriesdescription" : "12echoes"}, candidate_set=1),
     SeriesDesc("t2w", seriesdesc=["cor_t2w", "t2w"]),
     SeriesDesc("ethrive", seriesdesc=["ethrive", "e-thrive"]),
     T2(candidate_set=1),
