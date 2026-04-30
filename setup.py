@@ -96,6 +96,7 @@ kwargs = {
     'entry_points' : {
         'console_scripts' : [
             "fsort=fsort.main:main",
+            "fsort_report=fsort.report:main",
         ],
     },
     'classifiers' : [
