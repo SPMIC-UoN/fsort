@@ -278,7 +278,8 @@ class Fsort:
             "InversionTimeDelay": (0x2005, 0x1572),
             "NumberInversionDelays": (0x2005, 0x1571),
             "HeartRate": (0x0018, 0x1088),
-            "InversionTimeDelay+": (0x0018, 0x0082),
+            "InversionTimeDelay": (0x0018, 0x0082),
+            "DOB": (0x0010, 0x0030),
         }
 
         dicom_tag_dict = {}
@@ -294,7 +295,6 @@ class Fsort:
                         dicom_tag_dict[series_number] = []
                     dcm_metadata = {}
                     for name, tag in tags_to_scan.items():
-                        name = name.replace("+", "")
                         md = dcm.get(tag, None)
                         if md and md.value is not None:
                             dcm_metadata[name] = md.value
@@ -303,15 +303,17 @@ class Fsort:
                     # May not be a DICOM
                     pass
 
+        def _to_float(val):
+            try:
+                return float(val)
+            except Exception:
+                return 0.0
+
         for series_number, metadata in dicom_tag_dict.items():
-            metadata.sort(key=lambda x: float(x.get("InstanceCreationTime", 0)))
+            metadata.sort(key=lambda x: _to_float(x.get("InstanceCreationTime", x.get("AcquisitionTime", 0))))
 
         for img in nifti_files:
             if img.seriesnumber in dicom_tag_dict:
                 dcm_metadata = dicom_tag_dict[img.seriesnumber]
                 for name in tags_to_scan:
-                    name = name.replace("+", "")
-                    # FIXME is it always right to sort by value?
-                    img.metadata[name] = sorted(
-                        [v[name] for v in dcm_metadata if name in v]
-                    )
+                    img.metadata[name] = [v[name] for v in dcm_metadata if name in v]
