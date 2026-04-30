@@ -60,6 +60,7 @@ class DWI(Sorter):
         self.remove(seriesdescription="flipped")
         self.remove(bval=None)
         self.remove(bval=0, match_type="len")
+        self.remove(nvols=1)
         self.select_latest()
         self.save("dwi")
 
@@ -104,20 +105,21 @@ class GenericDixon(Sorter):
 SORTERS = [
     T1SERaw(),
     T1MolliRaw(),
-    T11MolliMapOrRaw(),
+    T1MolliMapOrRaw(),
     T2(),
     B0TwoEchos(add_removes=["aorta"]),
     B1(seriesdescription="B1"),
     MTR(),
-    SeriesDesc("t1w", seriesdesc=["cor_t1w", "t1w"]),
-    SeriesDesc("t2w", seriesdesc=["cor_t2w", "t2w"]),
+    SeriesDesc("t1w", seriesdesc=["cor_t1w", "t1w"], nvols=1),
+    SeriesDesc("t2w", seriesdesc=["cor_t2w", "t2w"], nvols=1),
+    SeriesDesc("sag_local", seriesdesc=["sag_localiser"]),
     T2star(),
     MolliAx(),
     MolliCor(),
     MDixon(name="dixon_cor", seriesdesc_inc="cor_mdixon"),
     MDixon(name="dixon_ax", seriesdesc_inc="mdixon", seriesdesc_exc="cor_mdixon"),
     GenericDixon(),
-    SeriesDesc("ethrive", seriesdesc=["ethrive", "e-thrive"]),
+    SeriesDesc("ethrive", seriesdesc=["ethrive", "e-thrive", "e_thrive"]),
     DWI(),
     ASL(),
 ]
