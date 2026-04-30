@@ -1,10 +1,8 @@
 import logging
 
 from fsort import Sorter, run
-
+from fsort.sorters import B0TwoEchos, T2 as T2Raw
 LOG = logging.getLogger(__name__)
-
-from afirm import B0
 
 class B1(Sorter):
     """
@@ -161,13 +159,14 @@ class T2(Sorter):
             self.save("t2")
 
 SORTERS = [
-    B0(),
+    B0TwoEchos(add_removes=["aorta"]),
     B1(),
     Dixon(),
     MolliLiver(),
     MolliKidney(),
     EThrive(),
     T2(),
+    T2Raw(name="t2raw"),
 ]
 
 if __name__ == "__main__":
