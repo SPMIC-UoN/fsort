@@ -13,10 +13,13 @@ class SeriesDesc(Sorter):
 
     def run(self):
         seriesdesc = self.kwargs.get("seriesdesc", self.name)
+        nvols = self.kwargs.get("nvols", None)
         if not isinstance(seriesdesc, (list, tuple)):
             seriesdesc = (seriesdesc,)
         for desc in seriesdesc:
             self.add(seriesdescription=desc)
+            if nvols is not None:
+                self.filter(nvols=nvols)
             if self.have_files():
                 break
         fname = self.kwargs.get("fname", self.name)
