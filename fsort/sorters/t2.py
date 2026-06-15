@@ -21,12 +21,31 @@ class T2(Sorter):
         self.candidate_set = self.kwargs.get("candidate_set", 0)
         num_echos = self.kwargs.get("num_echos", 10)
         seriesdesc = self.kwargs.get("seriesdesc", ("t2_mapping_resptrig", "t2_mapping", "t2 mapping", "t2map_resptrig", "t2map"))
+        
+        found = self._get_files(seriesdesc, num_echos)
+        if not found:
+            LOG.info(" - No matching T2 mapping data found, checking for multiple series")
+            first_series = {}
+            for desc in seriesdesc:
+                self.add(seriesdescription=desc)
+                self.remove(echotime=None)
+                if self.selected:
+                    first_series[desc] = min([f.seriesnumber for f in self.selected])
+                self.clear_selection()
+
+            found = self._get_files(seriesdesc, num_echos, first_series=first_series)
+        
+        if not found:
+            LOG.warning("No T2 mapping data found")
+
+    def _get_files(self, seriesdesc, num_echos, first_series=None):
         for desc in seriesdesc:
             LOG.info(f" - Looking for T2 mapping data with {num_echos} or {num_echos+1} volumes")
-            self.add(seriesdescription=desc, nvols=num_echos)
+            series_number = None if first_series is None else first_series.get(desc, None)
+            self.add(seriesdescription=desc, seriesnumber=series_number, nvols=num_echos)
             self.remove(echotime=None)
             if not self.have_files():
-                self.add(seriesdescription=desc, nvols=num_echos+1)
+                self.add(seriesdescription=desc, seriesnumber=series_number, nvols=num_echos+1)
                 self.remove(echotime=None)
                 if self.have_files():
                     LOG.info(f" - {num_echos+1} volumes found - removing last to discard T2 MAP image")
@@ -34,24 +53,23 @@ class T2(Sorter):
             if self.have_files():
                 for vol in range(num_echos):
                     self.save(f"t2_e{vol+1}", vol=vol)
-                break
+                return True
 
-        if not self.have_files():
-            LOG.info(f" - Not found - Looking for T2 mapping data in {num_echos} or {num_echos+1} single-volume sets")
-            for desc in seriesdesc:
-                self.add(seriesdescription=desc, expected_number=(num_echos, num_echos+1))
-                self.remove(echotime=None)
-                if self.have_files():
+        LOG.info(f" - Not found - Looking for T2 mapping data in {num_echos} or {num_echos+1} single-volume sets")
+        for desc in seriesdesc:
+            series_number = None if first_series is None else first_series.get(desc, None)
+            self.add(seriesdescription=desc, seriesnumber=series_number, expected_number=(num_echos, num_echos+1))
+            self.remove(echotime=None)
+            if self.have_files():
+                if self.count() == num_echos+1:
+                    LOG.info(f" - {num_echos+1} echos found - trying to remove T2 MAP image")
+                    self.remove(imagetype="T2 MAP")
                     if self.count() == num_echos+1:
-                        LOG.info(f" - {num_echos+1} echos found - trying to remove T2 MAP image")
-                        self.remove(imagetype="T2 MAP")
-                        if self.count() == num_echos+1:
-                            LOG.warn(f"Have {num_echos+1} echos still")
-                    self.save("t2_e", sort="echotime")
-                    break
+                        LOG.warning(f"Have {num_echos+1} echos still")
+                self.save("t2_e", sort="echotime")
+                return True
 
-        if not self.have_files():
-            LOG.warn("No T2 mapping data found")
+        return False
             
 
 class T2star(Sorter):
@@ -134,7 +152,7 @@ class ScannerT2Map(Sorter):
                         found = True
                         break
                     else:
-                        LOG.warn("No data set found with T2 MAP - ignoring")
+                        LOG.warning("No data set found with T2 MAP - ignoring")
 
         if not found:
-            LOG.warn("No scanner T2 map found")
+            LOG.warning("No scanner T2 map found")
