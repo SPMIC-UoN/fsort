@@ -208,7 +208,7 @@ class T2star(Sorter):
         self.select_one("seriesnumber", last=False)
         self.save("t2star_e", sort="echotime")
 
-class T1MolliMapOrRaw(T11MolliMapOrRaw):
+class T1MolliMapOrRaw(T1MolliMapOrRaw):
     def _add_std(self):
         self.add(seriesdescription="molli", imagetype="T1_MAP")
         self.add(seriesdescription="molli", imagetype="T1 MAP")

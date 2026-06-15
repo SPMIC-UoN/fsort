@@ -72,7 +72,7 @@ class ASL(Sorter):
 
 SORTERS = [
     T1MolliRaw(),
-    T11MolliMapOrRaw(),
+    T1MolliMapOrRaw(),
     B0TwoEchos(add_removes=["aorta"]),
     B1(seriesdescription="B1"),
     SeriesDesc("t1w", seriesdesc=["cor_t1w", "t1w"], nvols=1),

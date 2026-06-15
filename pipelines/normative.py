@@ -7,7 +7,7 @@ from afirm import DWI, ASL
 SORTERS = [
     T1SERaw(),
     T1MolliRaw(),
-    T11MolliMapOrRaw(),
+    T1MolliMapOrRaw(),
     T2(),
     B0TwoEchos(add_removes=["aorta"]),
     B1(seriesdescription="B1"),

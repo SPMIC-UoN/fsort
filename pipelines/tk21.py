@@ -15,7 +15,7 @@ class B0Tk21Special(B0TwoEchos):
 SORTERS = [
     T1SERaw(),
     T1MolliRaw(),
-    T11MolliMapOrRaw(),
+    T1MolliMapOrRaw(),
     T2(),
     B0Tk21Special(add_removes=["aorta"]),
     B1(seriesdescription="B1"),
